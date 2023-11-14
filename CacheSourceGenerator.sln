@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CacheSourceGenerator", "CacheSourceGenerator\CacheSourceGenerator\CacheSourceGenerator.csproj", "{9B949018-BE2D-4A86-90F2-0D3E66ED363E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CacheSourceGenerator.Sample", "CacheSourceGenerator\CacheSourceGenerator.Sample\CacheSourceGenerator.Sample.csproj", "{D39656F3-9615-467F-9F79-DC736E1B93D8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CacheSourceGenerator.Tests", "CacheSourceGenerator\CacheSourceGenerator.Tests\CacheSourceGenerator.Tests.csproj", "{7BD45803-B3F6-4411-B990-4EF54CB2B757}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9B949018-BE2D-4A86-90F2-0D3E66ED363E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B949018-BE2D-4A86-90F2-0D3E66ED363E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B949018-BE2D-4A86-90F2-0D3E66ED363E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B949018-BE2D-4A86-90F2-0D3E66ED363E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D39656F3-9615-467F-9F79-DC736E1B93D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D39656F3-9615-467F-9F79-DC736E1B93D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D39656F3-9615-467F-9F79-DC736E1B93D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D39656F3-9615-467F-9F79-DC736E1B93D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BD45803-B3F6-4411-B990-4EF54CB2B757}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BD45803-B3F6-4411-B990-4EF54CB2B757}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BD45803-B3F6-4411-B990-4EF54CB2B757}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BD45803-B3F6-4411-B990-4EF54CB2B757}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
