@@ -1,4 +1,6 @@
 # Cache source generator
+ _[![CacheSourceGenerator Nuget Version](https://img.shields.io/nuget/v/CacheSourceGenerator?style=flat-square&label=NuGet%3A%20CacheSourceGenerator)](https://www.nuget.org/packages/CacheSourceGenerator)_
+ 
 A source generator that can generate simple cache boilerplate around a method
 
 ## Getting started
