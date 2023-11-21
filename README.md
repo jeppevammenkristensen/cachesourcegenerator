@@ -100,35 +100,8 @@ public static partial class SomeOtherClass
 }
 ```
 
+## Method generation
 
+if the method is async or returning a `Task<T>` the generated method will take that into consideration.
 
-if the method is async or returning a `Task<T>` the generated method will take that into consideration. It will also leave of the exception if the return type is nullable.
-
-Per default the caching mechanism uses IMemoryCache. So `Microsoft.Extensions.Caching.Abstractions` and  `Microsoft.Extensions.Caching.Memory`. The generator exposes the `CacheInit` static class that per default returns a singleton instance of memory
-
-```csharp
-namespace CacheSourceGenerator;
-
-public delegate IMemoryCache CacheInitializer();
-
-internal static class CacheInit
-{
-    static CacheInit()
-    {
-        _memoryCache = new Lazy<IMemoryCache>(() => Initializer());
-    }
-    
-    private static Lazy<IMemoryCache> _memoryCache; //= new Lazy<IMemoryCache>(Initializer)
-    
-    private static CacheInitializer Initializer = () => new MemoryCache(new MemoryCacheOptions());
-    public static IMemoryCache MemoryCache => _memoryCache.Value;
-
-    public static void ReplaceInitializer(CacheInitializer initializer)
-    {
-        Initializer = initializer;
-        _memoryCache = new Lazy<IMemoryCache>(() => Initializer());
-    }
-}
-```
-
-You can replace how the IMemoryCache is initialized by calling the ReplaceInitializer method on CacheInit
+If the return type is not nullable, the generated method will throw an exception if the result of the method call is null.
