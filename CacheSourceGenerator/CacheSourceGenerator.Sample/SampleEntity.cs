@@ -1,18 +1,23 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace CacheSourceGenerator.Sample;
 
 // This code will not compile until you build the project with the Source Generators
 
 
-public partial class SampleEntity
+public partial class SampleEntitya
 {
-    public int Id { get; } = 42;
-    public string? Name { get; } = "Sample";
+    private readonly IMemoryCache _memoryCache;
+
+    public SampleEntitya(IMemoryCache memoryCache)
+    {
+        _memoryCache = memoryCache;
+    }
 
     [Cacho(MethodName = "GetId")]
-    private string DoGetId(int i)
+    private string DoGetId(int id)
     {
         return "Jeppe";
     }

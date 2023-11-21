@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using CacheSourceGenerator.Generation;
+using CacheSourceGenerator.Specification;
 using CacheSourceGenerator.Utilities;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -43,9 +44,8 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
             ctx.AddSource(
                 "CachoAttribute.g.cs",
                 SourceText.From(AttributeSourceCode, Encoding.UTF8));
-            ctx.AddSource("CachoSetup.g.cs", SourceText.From(Code.SetupCode, Encoding.UTF8));
+            // ctx.AddSource("CachoSetup.g.cs", SourceText.From(Code.SetupCode, Encoding.UTF8));
         });
-        
         
         var provider = context.SyntaxProvider
             .CreateSyntaxProvider(
@@ -86,7 +86,6 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
                     return (methodDeclarationSyntax, default!, false);
                 }
                 
-                
                 return (methodDeclarationSyntax, parentClass, true);
             }
         }
@@ -126,27 +125,71 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
             
             // We need to get semantic model of the class to retrieve metadata.
             var semanticModel = compilation.GetSemanticModel(classDeclarationSyntax.SyntaxTree);
-
+            
+            
             // Symbols allow us to get the compile-time information.
             if (ModelExtensions.GetDeclaredSymbol(semanticModel, classDeclarationSyntax) is not INamedTypeSymbol classSymbol)
                 continue;
             
-            // var namespaceName = classSymbol.ContainingNamespace.ToDisplayString();
-            //
-            // // 'Identifier' means the token of the node. Get class name from the syntax node.
-            // var className = classDeclarationSyntax.Identifier.Text;
-
             var classes = new List<EvaluatedClassCollection>();
-            if (Evalute(grouping) is { Methods.Length : > 0 } evaluated)
+            if (Evaluate(grouping) is { Methods.Length : > 0 } evaluated)
             {
                 classes.Add(evaluated);
             }
             
-            EvaluatedClassCollection Evalute(IGrouping<ClassDeclarationSyntax,MethodDeclarationSyntax> grouping)
+            EvaluatedClassCollection Evaluate(IGrouping<ClassDeclarationSyntax,MethodDeclarationSyntax> classMethodGrouping)
             {
+                EvaluatedClassCollection collection = new EvaluatedClassCollection(classMethodGrouping.Key, classSymbol);
+                
+                // Check if the Microsoft.Extensions.Caching.Memory assembly is references
+                var memoryCacheExists =
+                    classSymbol.ContainingModule.ReferencedAssemblies.Any(x =>
+                        x.Name == "Microsoft.Extensions.Caching.Memory");
+
+                // Check if any valid members can provide a memorycache
+                var typeSpec = new TypeOfSpecification(types.MemoryCache);
+                var methodSpecification = SpecificationRecipes.MethodWithNoParametersSpec.WithTypeSpec(typeSpec);
+                
+                var memberSpecficiation =
+                    methodSpecification |
+                    SpecificationRecipes.FieldOfTypeSpec(typeSpec) |
+                    SpecificationRecipes.PropertyOfTypeSpec(typeSpec);
+
+                var firstMember = classSymbol.GetAllMembers().Where(x =>
+                {
+                    if (x.isInherited && x.member.DeclaredAccessibility == Accessibility.Private)
+                        return false;
+                    return memberSpecficiation.IsSatisfiedBy(x.member);
+                })
+                    .Select(x => x.member)
+                    .FirstOrDefault();
+                
+                if (firstMember is { })
+                {
+                    CacheMemberAccessSource accessSource = methodSpecification.IsSatisfiedBy(firstMember) ? CacheMemberAccessSource.Method : CacheMemberAccessSource.PropertyOrField;
+                    collection.SetCacheFromMember(firstMember.Name, accessSource);
+                }
+                else if (memoryCacheExists)
+                {
+                    collection.SetCacheFromCustomFactory();
+                }
+                
+                if (collection.CacheAccessStrategy == CacheAccessStrategy.None)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        new DiagnosticDescriptor(DiagnosticIds.Id_003_MemoryCacheRequired,
+                            "Microsoft.Extensions.Caching.Memory is required to be installed or an item of type IMemoryCache should be available",
+                            "No valid source to provide IMemoryCache available. This required Micorosft.Extensions.Caching.Memory to be installed",
+                            "General",
+                            DiagnosticSeverity.Error,
+                            true),
+                        classDeclarationSyntax.GetLocation()));
+                    return collection;
+                }
+                
                 // TODO Match on method signature
-                EvaluatedClassCollection collection = new EvaluatedClassCollection(grouping.Key, classSymbol);
-                foreach (var methodDeclarationSyntax in grouping)
+               
+                foreach (var methodDeclarationSyntax in classMethodGrouping)
                 {
                     if (semanticModel.GetDeclaredSymbol(methodDeclarationSyntax) is not {} methodSymbol)
                     {
@@ -186,7 +229,21 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
         }
     }
 
-   
+    
+}
+
+
+internal enum CacheAccessStrategy
+{
+    None,
+    FromMember,
+    FromSelfGeneratedFactory
+}
+
+internal enum CacheMemberAccessSource
+{
+    PropertyOrField,
+    Method
 }
 
 internal class EvaluatedClassCollection
@@ -200,12 +257,29 @@ internal class EvaluatedClassCollection
     {
         ClassDeclaration = classDeclaration;
         NamedTypeSymbol = namedTypeSymbol;
+    }
+
+    public void SetCacheFromMember(string name, CacheMemberAccessSource accessSource)
+    {
+        CacheMemberAccessName = name;
+        CacheAccessSource = accessSource;
+        CacheAccessStrategy = CacheAccessStrategy.FromMember;
         
     }
+
+    public CacheMemberAccessSource? CacheAccessSource { get; private set; }
+    public CacheAccessStrategy CacheAccessStrategy { get; private set; }
+
+    public string? CacheMemberAccessName { get; private set; }
 
     public void AddMethod(IMethodSymbol methodSymbol, MethodDeclarationSyntax methodDeclarationSyntax,
         AttributeData attributeData)
     {
         Methods = Methods.Add((methodDeclarationSyntax, methodSymbol, attributeData));
+    }
+
+    public void SetCacheFromCustomFactory()
+    {
+        CacheAccessStrategy = CacheAccessStrategy.FromSelfGeneratedFactory;
     }
 }
