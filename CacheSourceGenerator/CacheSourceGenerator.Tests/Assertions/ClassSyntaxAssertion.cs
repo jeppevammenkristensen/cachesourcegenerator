@@ -60,6 +60,19 @@ public class MethodSyntaxAssertion : ReferenceTypeAssertions<MethodDeclarationSy
 
         return new AndConstraint<MethodSyntaxAssertion>(this);
     }
+    
+    public AndConstraint<MethodSyntaxAssertion> HaveBodyNotContaining(string bodyText, string because = "", params object[] becauseArgs)
+    {
+        Execute.Assertion.BecauseOf(because, becauseArgs)
+            .ForCondition(!string.IsNullOrEmpty(bodyText))
+            .FailWith("bodyText should not be empty")
+            .Then.Given(() => Subject.Body?.ToString() ?? string.Empty)
+            .ForCondition(body => !body.Contains(bodyText))
+            .FailWith("Expected {context:methodsyntax} to not have body containing {0}{reason}, but body was {1},\r\n{2}",
+                _ => bodyText, b => b, _ => Subject.ToString());
+
+        return new AndConstraint<MethodSyntaxAssertion>(this);
+    }
 
     public AndConstraint<MethodSyntaxAssertion> BeAsync(string because = "", params object[] becauseArgs)
     {

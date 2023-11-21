@@ -6,25 +6,14 @@ namespace CacheSourceGenerator.Sample;
 
 // This code will not compile until you build the project with the Source Generators
 
-
-public  static partial class SomeOtherClass
+public static partial class SomeOtherClass
 {
-private static IMemoryCache GetCache() => new MemoryCache(new MemoryCacheOptions());
-
-[CacheSourceGenerator.Cacho(MethodName = "SomeMethod")]
-public static Task<string> ExecuteCall()
-{
-    return Task.FromResult("Hello");
-}
-}
-
-public partial class SomeClass
-{
+    private static IMemoryCache GetCache() => new MemoryCache(new MemoryCacheOptions());
 
     [CacheSourceGenerator.Cacho(MethodName = "SomeMethod")]
-    private string DoSomeMethod(string id, int age)
+    public static Task<string?> ExecuteCall()
     {
-        return $"{id}{age}";
+        return Task.FromResult<string?>("Hello");
     }
 }
 
@@ -38,7 +27,7 @@ public partial class SampleEntitya
     }
 
     [Cacho(MethodName = "GetId")]
-    private string DoGetId(int id)
+    private string? DoGetId(int id)
     {
         return "Jeppe";
     }

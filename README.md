@@ -59,24 +59,47 @@ public partial class SomeClass
 
 ### Providing the cache from the class
 
-An alternative is to provide a IMemoryCacheInstance from the class. This can be done through a
+An alternative is to provide a IMemoryCache instance from the class. This can be done through a
 
 * Field
 * Property
 * Method (parameter less)
 
 ```csharp
-public static SomeOtherClass
+public static partial class SomeOtherClass
 {
     private static IMemoryCache GetCache() => new MemoryCache(new MemoryCacheOptions());
 
-    [CacheSourceGenerator.Cache(MethodName = "SomeMethod", CacheInstance = "GetCache")]
+    [CacheSourceGenerator.Cacho(MethodName = "SomeMethod")]
     public static Task<string> ExecuteCall()
     {
         return Task.FromResult("Hello");
     }
 }
 ```
+
+This will generate the code below.
+
+```csharp
+public static partial class SomeOtherClass
+{
+    public async static Task<string> SomeMethod()
+    {
+        var key = new
+        {
+            _MethodName = "ExecuteCall",
+            _ClassName = "SomeOtherClass",
+        };
+        IMemoryCache cache = GetCache();
+        var result = await cache.GetOrCreateAsync(key, async entry =>
+        {
+            return await ExecuteCall();
+        });
+        return result ?? throw new InvalidOperationException("Expected non empty result");
+    }
+}
+```
+
 
 
 if the method is async or returning a `Task<T>` the generated method will take that into consideration. It will also leave of the exception if the return type is nullable.

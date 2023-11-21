@@ -33,15 +33,22 @@ public static class Extensions
         return methodSymbol.ReturnType.OriginalDefinition.Equals(_types.GenericTask, SymbolEqualityComparer.Default);
     }
 
-    public static bool IsNullable(this ITypeSymbol typeSymbol)
+    public static bool IsNullable(this ITypeSymbol typeSymbol, LazyTypes _types)
     {
-        if (typeSymbol.NullableAnnotation == NullableAnnotation.Annotated)
+        var candidate = typeSymbol;
+
+        if (typeSymbol.OriginalDefinition.Equals(_types.GenericTask, SymbolEqualityComparer.Default) && typeSymbol is INamedTypeSymbol named)
+        {
+            candidate = named.TypeArguments.First();
+        }
+        
+        if (candidate.NullableAnnotation == NullableAnnotation.Annotated)
         {
             return true;
         }
         
-        if (typeSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T &&
-            typeSymbol is INamedTypeSymbol { IsGenericType: true })
+        if (candidate.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T &&
+            candidate is INamedTypeSymbol { IsGenericType: true })
         {
             return true;
         }

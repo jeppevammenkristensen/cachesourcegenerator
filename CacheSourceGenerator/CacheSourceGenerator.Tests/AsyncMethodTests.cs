@@ -26,7 +26,7 @@ public class AsyncMethodTests
                         }
                         
                         [CacheSourceGenerator.Cacho(MethodName = "CacheName")]
-                        public Task<int> CalculateAge()
+                        public Task<int?> CalculateAge()
                         {
                             return 42;
                         }
@@ -35,7 +35,8 @@ public class AsyncMethodTests
 
         Generator.GenerateResult(code).Should().ContainFile("TestClass.g.cs").Which.Should()
             .ContainClass("TestClass").Which.Should()
-            .ContainMethod("CacheName").Which.Should().BeAsync().And.HaveReturnType("Task<int>").
-            And.HaveBodyContaining("var result = await cache.GetOrCreateAsync(key, async entry =>").And.HaveBodyContaining("return await CalculateAge()");
+            .ContainMethod("CacheName").Which.Should().BeAsync().And.HaveReturnType("Task<int?>").
+            And.HaveBodyContaining("var result = await cache.GetOrCreateAsync(key, async entry =>").And.HaveBodyContaining("return await CalculateAge()")
+            .And.HaveBodyNotContaining("""?? throw new InvalidOperationException("Expected non empty result")""");
     }    
 }

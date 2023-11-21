@@ -114,7 +114,7 @@ internal class ClassesCodeBuilder
 
     private  string GenerateMethodStatement(EvaluatedClassCollection collection, IMethodSymbol methodSymbol)
     {
-        var nullThrow = methodSymbol.ReturnType.IsNullable()
+        var nullThrow = methodSymbol.ReturnType.IsNullable(_types)
             ? string.Empty
             : """?? throw new InvalidOperationException("Expected non empty result")""";
         
