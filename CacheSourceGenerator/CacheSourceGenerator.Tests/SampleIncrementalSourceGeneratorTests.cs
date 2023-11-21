@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using CacheSourceGenerator.Tests.Assertions;
+using CacheSourceGenerator.Tests.Utils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.Caching.Memory;
@@ -42,7 +43,7 @@ public class SampleIncrementalSourceGeneratorTests
                    }
                    """;
 
-        var syntaxTree = GenerateReportMethod(code).Should().ContainFile("TestClass.g.cs").Which;
+        var syntaxTree = Generator.GenerateResult(code).Should().ContainFile("TestClass.g.cs").Which;
         
         syntaxTree.Should().ContainClass("TestClass").Which
             .Should().BePartial().And.BePublic().And
@@ -58,7 +59,7 @@ public class SampleIncrementalSourceGeneratorTests
     [Fact]
     public void ClassDecoratedWithAttributeAndNoInjectedIMemoryCacheGeneratesExpectedOutput()
     {
-        var runResult = GenerateReportMethod("""
+        var runResult = Generator.GenerateResult("""
                              namespace TestNamespace;
 
                              public partial class Vector3
@@ -89,28 +90,5 @@ public class SampleIncrementalSourceGeneratorTests
             .Should().BeStatic();
     }
     
-     public GeneratorDriverRunResult GenerateReportMethod(string inputText)
-    {
-        // Create an instance of the source generator.
-        var generator = new CachoIncrementalSourceGenerator();
-
-        // Source generators should be tested using 'GeneratorDriver'.
-        var driver = CSharpGeneratorDriver.Create(generator);
-
-        // We need to create a compilation with the required source code.
-        var compilation = CSharpCompilation.Create(nameof(CachoIncrementalSourceGenerator),
-            new[] { CSharpSyntaxTree.ParseText(inputText) },
-            new[]
-            {
-                // To support 'System.Attribute' inheritance, add reference to 'System.Private.CoreLib'.
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(IMemoryCache).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(MemoryCache).Assembly.Location)
-            });
-
-        // Run generators and retrieve all results.
-        return driver.RunGenerators(compilation).GetRunResult();
-        
-        //ExpectedGeneratedClassText.Should().BeEquivalentTo(syntaxTree.GetText().ToString());
-    }
+   
 }

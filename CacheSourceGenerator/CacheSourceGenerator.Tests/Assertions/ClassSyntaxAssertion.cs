@@ -48,7 +48,7 @@ public class MethodSyntaxAssertion : ReferenceTypeAssertions<MethodDeclarationSy
         return new AndConstraint<MethodSyntaxAssertion>(this);
     }
 
-    public void HaveBodyContaining(string bodyText, string because= "", params object[] becauseArgs)
+    public AndConstraint<MethodSyntaxAssertion> HaveBodyContaining(string bodyText, string because= "", params object[] becauseArgs)
     {
         Execute.Assertion.BecauseOf(because, becauseArgs)
             .ForCondition(!string.IsNullOrEmpty(bodyText))
@@ -57,6 +57,24 @@ public class MethodSyntaxAssertion : ReferenceTypeAssertions<MethodDeclarationSy
             .ForCondition(body => body.Contains(bodyText))
             .FailWith("Expected {context:methodsyntax} to have body containing {0}{reason}, but body was {1}",
                 _ => bodyText, b => b);
+
+        return new AndConstraint<MethodSyntaxAssertion>(this);
+    }
+
+    public AndConstraint<MethodSyntaxAssertion> BeAsync(string because = "", params object[] becauseArgs)
+    {
+        return ModifierTest(SyntaxKind.AsyncKeyword, because, becauseArgs);
+    }
+    
+    private AndConstraint<MethodSyntaxAssertion> ModifierTest(SyntaxKind syntaxKind, string because = "", params object[] becauseArgs)
+    {
+        Execute.Assertion.BecauseOf(because, becauseArgs)
+            .Given(() => Subject.Modifiers)
+            .ForCondition(list => list.Any(x => CSharpExtensions.IsKind((SyntaxToken)x, syntaxKind)))
+            .FailWith("Expected {context:methodsyntax} to have a {0} modifier{reason}, but had {1}\r\n{2}", _ => syntaxKind,
+                l => l.Select(x => x.ToString()), _ => Subject.ToString());
+
+        return new AndConstraint<MethodSyntaxAssertion>(this);
     }
 }
 

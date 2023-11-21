@@ -30,10 +30,7 @@ public static class Extensions
 
     public static bool IsAsyncWithResult(this IMethodSymbol methodSymbol, LazyTypes _types)
     {
-        if (!methodSymbol.IsAsync)
-            return false;
-
-        return methodSymbol.ReturnType.OriginalDefinition.Equals(_types.ListGeneric, SymbolEqualityComparer.Default);
+        return methodSymbol.ReturnType.OriginalDefinition.Equals(_types.GenericTask, SymbolEqualityComparer.Default);
     }
 
     public static bool IsNullable(this ITypeSymbol typeSymbol)

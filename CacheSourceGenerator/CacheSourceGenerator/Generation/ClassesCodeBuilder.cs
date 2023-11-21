@@ -101,7 +101,7 @@ internal class ClassesCodeBuilder
             
             // replace the modifiers but add public
             newMethod = newMethod.WithModifiers(
-                SyntaxFactory.TokenList(new[] { SyntaxFactory.Token(SyntaxKind.PublicKeyword) }.Concat(syntaxTokens)));
+                SyntaxFactory.TokenList(newModifiers.Concat(syntaxTokens)));
 
             var methodStatement = GenerateMethodStatement(collection, methodSymbol);
 
@@ -127,7 +127,7 @@ internal class ClassesCodeBuilder
                             IMemoryCache cache = {{ GetCacheAccess(collection)}};            
                             var result = await cache.GetOrCreateAsync(key, async entry =>
                             {
-                                var result = await {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
+                                return await {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
                             }); 
                             return result {{nullThrow}} ;
 
