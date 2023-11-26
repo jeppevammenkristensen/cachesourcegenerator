@@ -33,6 +33,12 @@ public static class Extensions
         return methodSymbol.ReturnType.OriginalDefinition.Equals(_types.GenericTask, SymbolEqualityComparer.Default);
     }
 
+    public static bool IsAsync(this ITypeSymbol typeSymbol, LazyTypes types)
+    {
+        return typeSymbol.Equals(types.Task, SymbolEqualityComparer.Default) ||
+               typeSymbol.OriginalDefinition.Equals(types.GenericTask, SymbolEqualityComparer.Default);
+    }
+
     public static bool IsNullable(this ITypeSymbol typeSymbol, LazyTypes _types)
     {
         var candidate = typeSymbol;

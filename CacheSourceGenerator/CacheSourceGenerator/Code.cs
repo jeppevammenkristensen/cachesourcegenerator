@@ -6,14 +6,6 @@ public static class Code
     
     public const string AttributeName = "CachoAttribute";
     
-    
-//         using System;
-//     using Microsoft.Extensions.Caching.Memory;
-//
-//     namespace {{Namespace}};
-//
-// public delegate IMemoryCache CacheInitializer();
-    
     public const string AddCacheClass = """
                                       private static class CacheInit
                                       {
@@ -26,4 +18,7 @@ public static class Code
                                           public static IMemoryCache MemoryCache => _memoryCache.Value;
                                       }
                                       """;
+
+    public const string MethodName = "MethodName";
+    public const string CacheEnricherProcessor = "CacheEnricherProcessor";
 }

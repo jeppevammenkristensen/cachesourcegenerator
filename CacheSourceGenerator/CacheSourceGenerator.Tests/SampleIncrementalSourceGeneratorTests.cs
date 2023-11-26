@@ -50,7 +50,7 @@ public class SampleIncrementalSourceGeneratorTests
             .ContainMethod("CacheName").Which.Should()
             .HaveReturnType("int").And
             .HaveParameters(Array.Empty<(string type, string name)>()).And
-            .HaveBodyContaining("IMemoryCache cache = _cache;");
+            .HaveBodyContaining("IMemoryCache _cache_ = _cache;");
         
 
         syntaxTree.Should().NotContainClass("CacheInit");
@@ -83,7 +83,7 @@ public class SampleIncrementalSourceGeneratorTests
             .Should().BePublic().And.BePartial().And
             .ContainMethod("TheName").Which.Should()
             .HaveReturnType("string").And.HaveParameters(new (string type, string name)[] {("int", "number"), ("string","hector")}).And
-            .HaveBodyContaining("IMemoryCache cache = CacheInit.MemoryCache");
+            .HaveBodyContaining("IMemoryCache _cache_ = CacheInit.MemoryCache");
 
         syntaxTree.Should()
             .ContainClass("CacheInit").Which

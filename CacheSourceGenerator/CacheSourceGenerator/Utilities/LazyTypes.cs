@@ -13,6 +13,7 @@ public class LazyTypes
     private readonly Lazy<INamedTypeSymbol?> _task;
     private readonly Lazy<INamedTypeSymbol?> _genericTask;
     private readonly Lazy<INamedTypeSymbol> _memoryCache;
+    private readonly Lazy<INamedTypeSymbol?> _cacheEntry;
 
 
     public INamedTypeSymbol? ListGeneric => _listGeneric.Value;
@@ -22,6 +23,7 @@ public class LazyTypes
 
     public INamedTypeSymbol? GenericTask => _genericTask.Value;
     public INamedTypeSymbol MemoryCache => _memoryCache.Value;
+    public INamedTypeSymbol? CacheEntry => _cacheEntry.Value;
 
     public LazyTypes(Compilation compilation)
     {
@@ -36,6 +38,8 @@ public class LazyTypes
             new Lazy<INamedTypeSymbol?>(() => compilation.GetTypeByMetadataName("System.Threading.Tasks.Task`1"));
         _memoryCache = new Lazy<INamedTypeSymbol>(() =>
             compilation.GetTypesByMetadataName("Microsoft.Extensions.Caching.Memory.IMemoryCache").FirstOrDefault());
+        _cacheEntry = new Lazy<INamedTypeSymbol?>(() =>
+            compilation.GetTypesByMetadataName("Microsoft.Extensions.Caching.Memory.ICacheEntry").FirstOrDefault());
     }
 
     /// <summary>

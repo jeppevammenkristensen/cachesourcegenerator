@@ -1,74 +1,7 @@
 ﻿using System;
-using CacheSourceGenerator.Utilities;
 using Microsoft.CodeAnalysis;
 
 namespace CacheSourceGenerator.Specification;
-
-public class EnumerableSpecification<T> : Specification<T> where T : ITypeSymbol
-{
-    public ITypeSymbol? Type { get; set; }
-    
-    public override bool IsSatisfiedBy(T obj)
-    {
-        var (isEnumerable, underlyingType) = obj.IsEnumerableOfTypeButNotString();
-        if (!isEnumerable) return false;
-
-        if (Type is { })
-        {
-            if (!underlyingType.Equals(Type, SymbolEqualityComparer.Default))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-    
-    public EnumerableSpecification<T> WithUnderlyingType(ITypeSymbol typeSymbol)
-    {
-        var (isEnumerable, underlyingType) = typeSymbol.IsEnumerableOfTypeButNotString();
-        
-        Type = isEnumerable ? underlyingType : typeSymbol;
-        return this;
-    }
-}
-
-public class FieldSpecification<T> : Specification<T> where T : ISymbol
-{
-    private ITypeSymbol? _typeSymbol;
-    private Specification<ITypeSymbol>? _typeSpec;
-
-    public override bool IsSatisfiedBy(T obj)
-    {
-        if (obj.Kind != SymbolKind.Field) return false;
-
-        if (obj is IFieldSymbol fieldSymbol)
-        {
-            if (_typeSymbol is {} && !fieldSymbol.Type.Equals(_typeSymbol, SymbolEqualityComparer.Default))
-                return false;
-            if (_typeSpec is { } && _typeSpec != fieldSymbol.Type)
-                return false;
-        }
-        else
-        {
-            return false;
-        }
-        
-        return true;
-    }
-
-    public FieldSpecification<T> WithType(ITypeSymbol typeSymbol)
-    {
-        _typeSymbol = typeSymbol;
-        return this;
-    }
-
-    public FieldSpecification<T> WithTypeSpec(Specification<ITypeSymbol> typeSpec)
-    {
-        _typeSpec = typeSpec;
-        return this;
-    }
-}
 
 public class PropertySpecification<T> : Specification<T> where T : ISymbol
 {

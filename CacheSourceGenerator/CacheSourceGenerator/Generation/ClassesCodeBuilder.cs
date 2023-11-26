@@ -76,12 +76,13 @@ internal class ClassesCodeBuilder
             newPartialClass = newPartialClass.AddMembers(SyntaxFactory.ParseMemberDeclaration(Code.AddCacheClass) ?? throw new InvalidOperationException("Failed to parse AddCacheClass code"));
         }
         
-        foreach (var (methodDeclarationSyntax, methodSymbol, attributeData) in collection.Methods)
+        foreach (var methodData in collection.Methods)
         {
-            var newIdentifier = SyntaxFactory.Identifier(attributeData.GetAttributePropertyValue<string>("MethodName")!);
+            var newIdentifier = SyntaxFactory.Identifier(methodData.Attribute.GetAttributePropertyValue<string>(Code.MethodName)!);
+           
 
             // Resuse the source method but give it the new name
-            var newMethod = methodDeclarationSyntax.WithIdentifier(newIdentifier);
+            var newMethod = methodData.MethodDeclarationSyntax.WithIdentifier(newIdentifier);
             // Clear attributes
             newMethod = newMethod.WithAttributeLists(SyntaxFactory.List<AttributeListSyntax>());
 
@@ -95,7 +96,7 @@ internal class ClassesCodeBuilder
             var syntaxTokens = newMethod.Modifiers.Where(x => !accessModifiers.Contains(x.Kind())).ToList();
 
             var newModifiers = new List<SyntaxToken>() { SyntaxFactory.Token(SyntaxKind.PublicKeyword) };
-            if (methodSymbol.IsAsyncWithResult(_types))
+            if (methodData.MethodSymbol.IsAsyncWithResult(_types))
             {
                 newModifiers.Add(SyntaxFactory.Token(SyntaxKind.AsyncKeyword));
             }
@@ -104,7 +105,7 @@ internal class ClassesCodeBuilder
             newMethod = newMethod.WithModifiers(
                 SyntaxFactory.TokenList(newModifiers.Concat(syntaxTokens)));
 
-            var methodStatement = GenerateMethodStatement(collection, methodSymbol);
+            var methodStatement = GenerateMethodStatement(collection, methodData);
 
             newMethod = newMethod.WithBody((BlockSyntax)SyntaxFactory.ParseStatement(methodStatement));
             newPartialClass = newPartialClass.AddMembers(newMethod);
@@ -113,8 +114,10 @@ internal class ClassesCodeBuilder
         return newPartialClass;
     }
 
-    private  string GenerateMethodStatement(EvaluatedClassCollection collection, IMethodSymbol methodSymbol)
+    private  string GenerateMethodStatement(EvaluatedClassCollection collection, MethodData methodData)
     {
+        var methodSymbol = methodData.MethodSymbol;
+        
         var nullThrow = methodSymbol.ReturnType.IsNullable(_types)
             ? string.Empty
             : """?? throw new InvalidOperationException("Expected non empty result")""";
@@ -128,6 +131,7 @@ internal class ClassesCodeBuilder
                             IMemoryCache _cache_ = {{ GetCacheAccess(collection)}};            
                             var _result_ = await _cache_.GetOrCreateAsync(_key_, async _entry_ =>
                             {
+                                {{ GenerateCacheEntryProcessing(methodData, true) }}
                                 return await {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
                             }); 
                             return _result_ {{nullThrow}} ;
@@ -143,6 +147,7 @@ internal class ClassesCodeBuilder
                         IMemoryCache _cache_ = {{GetCacheAccess(collection)}};    
                         return _cache_.GetOrCreate(_key_, _entry_ =>
                         {
+                            {{ GenerateCacheEntryProcessing(methodData, false) }}
                             return {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
                         }) {{nullThrow}};
 
@@ -150,6 +155,26 @@ internal class ClassesCodeBuilder
                  """;
 
 
+    }
+
+    private string GenerateCacheEntryProcessing(MethodData methodData, bool callerAsync)
+    {
+        if (methodData.EvaluatedCacheEnricher == null)
+            return string.Empty;
+        if (methodData.EvaluatedCacheEnricher.IsAsync)
+        {
+            if (callerAsync)
+            {
+                return $"""await { methodData.EvaluatedCacheEnricher.MethodName }(_entry_);""";    
+            }
+
+            return $"""{methodData.EvaluatedCacheEnricher.MethodName}(_entry_).GetAwaiter().GetResult();""";
+        }
+        else
+        {
+            return $"""{methodData.EvaluatedCacheEnricher.MethodName}(_entry_);""";
+        }
+        
     }
 
     private string GetCacheAccess(EvaluatedClassCollection classCollection)
