@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
         <IsPackable>true</IsPackable>
@@ -11,17 +10,22 @@
         <PackageId>CacheSourceGenerator</PackageId>
         <Authors>Jeppe Roi Kristensen</Authors>
         <Description>A tool to wrap a method call with caching</Description>        
-        <VersionPrefix>0.1.0</VersionPrefix>
+        <VersionPrefix>0.2.0</VersionPrefix>
         <PackageTags>C#; Source Generator; Caching</PackageTags>
         <PackageProjectUrl>https://github.com/jeppevammenkristensen/cachesourcegenerator</PackageProjectUrl>        
         <RepositoryUrl>https://github.com/jeppevammenkristensen/cachesourcegenerator</RepositoryUrl>
-        <PackageReleaseNotes>Update to provide two mechanisms to get cache</PackageReleaseNotes>
+        <PackageReleaseNotes>Update to provide cache entry handling</PackageReleaseNotes>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageIconUrl>Icon.png</PackageIconUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
     <ItemGroup>
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Include="docs\Readme.md" Pack="true" PackagePath="\" />
+        <None Include="docs\icon.png" Pack="true" PackagePath="\" />
+        
     </ItemGroup>
-
+    
 
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4">

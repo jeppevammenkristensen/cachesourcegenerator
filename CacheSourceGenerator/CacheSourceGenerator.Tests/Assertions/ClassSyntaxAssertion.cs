@@ -41,7 +41,7 @@ public class MethodSyntaxAssertion : ReferenceTypeAssertions<MethodDeclarationSy
                     .Select(x => (x.Type?.ToString() ?? string.Empty, x.Identifier.ToString())).ToList())
             .ForCondition(methodParameters => methodParameters.SequenceEqual(parameters!))
             .FailWith("Expected {container:methodsyntax} to have parameters {0}{reason}, but was {1},\r\n{2}",
-                _ => parameters.Select(x => $"{x.type} {x.name}"), 
+                _ => parameters!.Select(x => $"{x.type} {x.name}"), 
                 m => m.Select(x => $"{x.Item1} {x.Item2}"), 
                 _ => Subject.ToString());
 
