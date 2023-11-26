@@ -6,36 +6,28 @@ namespace CacheSourceGenerator.Sample;
 
 // This code will not compile until you build the project with the Source Generators
 
-public static partial class SomeOtherClass
-{
-    private static IMemoryCache GetCache() => new MemoryCache(new MemoryCacheOptions());
 
-    [CacheSourceGenerator.Cacho(MethodName = "SomeMethod")]
-    public static Task<string?> ExecuteCall()
-    {
-        return Task.FromResult<string?>("Hello");
-    }
-}
-
-public partial class SampleEntitya
+public partial class SampleEntity
 {
     private readonly IMemoryCache _memoryCache;
 
-    public SampleEntitya(IMemoryCache memoryCache)
+    public SampleEntity(IMemoryCache memoryCache)
     {
         _memoryCache = memoryCache;
     }
 
-    [Cacho(MethodName = "GetId")]
-    private string? DoGetId(int id)
+    [Cacho(MethodName = "GetId", CacheEnricherProcessor = nameof(ProcessCacheEntry))]
+    private string? DoGetSomeValue(int id)
     {
-        return "Jeppe";
+        return "Someresult";
     }
 
-    [Cacho(MethodName = "GetIdAsync")]
-    public async Task<string> DoGetIdAsync()
+    /// <summary>
+    /// Process the cache entry by updating its sliding expiration time to 2 minutes.
+    /// </summary>
+    /// <param name="entry">The cache entry to be processed.</param>
+    public void ProcessCacheEntry(ICacheEntry entry)
     {
-        await Task.Delay(3000);
-        return "Jeppe";
+        entry.SlidingExpiration = TimeSpan.FromMinutes(2);
     }
 }
