@@ -10,20 +10,19 @@
         <PackageId>CacheSourceGenerator</PackageId>
         <Authors>Jeppe Roi Kristensen</Authors>
         <Description>A tool to wrap a method call with caching</Description>        
-        <VersionPrefix>0.2.0</VersionPrefix>
+        <VersionPrefix>0.2.0.1</VersionPrefix>
         <PackageTags>C#; Source Generator; Caching</PackageTags>
         <PackageProjectUrl>https://github.com/jeppevammenkristensen/cachesourcegenerator</PackageProjectUrl>        
         <RepositoryUrl>https://github.com/jeppevammenkristensen/cachesourcegenerator</RepositoryUrl>
         <PackageReleaseNotes>Update to provide cache entry handling</PackageReleaseNotes>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageIconUrl>Icon.png</PackageIconUrl>
+        <PackageReadmeFile>Readme.md</PackageReadmeFile>
+        <PackageIcon>Icon.png</PackageIcon>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
     <ItemGroup>
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
         <None Include="docs\Readme.md" Pack="true" PackagePath="\" />
-        <None Include="docs\icon.png" Pack="true" PackagePath="\" />
-        
+        <None Include="docs\Icon.png" Pack="true" PackagePath="\" />        
     </ItemGroup>
     
 
