@@ -79,23 +79,27 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
         var methodDeclarationSyntax = (MethodDeclarationSyntax)context.Node;
         // Go through all attributes of the class.
         foreach (AttributeListSyntax attributeListSyntax in methodDeclarationSyntax.AttributeLists)
-        foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
         {
-            if (ModelExtensions.GetSymbolInfo(context.SemanticModel, attributeSyntax).Symbol is not IMethodSymbol attributeSymbol)
-                continue; // if we can't get the symbol, ignore it
-
-            string attributeName = attributeSymbol.ContainingType.ToDisplayString();
-
-            // Check the full name of the [Report] attribute.
-            if (attributeName == $"{Namespace}.{Code.AttributeName}")
+            foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
             {
-                if (methodDeclarationSyntax.Ancestors().FirstOrDefault(x => x.IsKind(SyntaxKind.ClassDeclaration)) is
-                    not ClassDeclarationSyntax parentClass)
+                if (ModelExtensions.GetSymbolInfo(context.SemanticModel, attributeSyntax).Symbol is not IMethodSymbol
+                    attributeSymbol)
+                    continue; // if we can't get the symbol, ignore it
+
+                string attributeName = attributeSymbol.ContainingType.ToDisplayString();
+
+                // Check the full name of the [Report] attribute.
+                if (attributeName == $"{Namespace}.{Code.AttributeName}")
                 {
-                    return (methodDeclarationSyntax, default!, false);
+                    if (methodDeclarationSyntax.Ancestors()
+                            .FirstOrDefault(x => x.IsKind(SyntaxKind.ClassDeclaration)) is
+                        not ClassDeclarationSyntax parentClass)
+                    {
+                        return (methodDeclarationSyntax, default!, false);
+                    }
+
+                    return (methodDeclarationSyntax, parentClass, true);
                 }
-                
-                return (methodDeclarationSyntax, parentClass, true);
             }
         }
 
@@ -195,8 +199,6 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
                         classDeclarationSyntax.GetLocation()));
                     return collection;
                 }
-                
-                // TODO Match on method signature
                
                 foreach (var methodDeclarationSyntax in classMethodGrouping)
                 {
@@ -266,7 +268,7 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
 
             foreach (var item in classes)
             {
-               var result = builder.BuildClassPartialWithMethod(item);
+               var result = builder.Build(item);
                context.AddSource($"{item.NamedTypeSymbol.Name}.g.cs", SourceText.From(result,Encoding.UTF8));
             }
         }

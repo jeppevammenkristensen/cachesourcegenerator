@@ -90,5 +90,37 @@ public class SampleIncrementalSourceGeneratorTests
             .Should().BeStatic();
     }
     
+    
+    [Fact]
+    public void ClassDecoratedWithValidAttributeGeneratesEmit()
+    {
+        var runResult = Generator.GenerateResult("""
+                                                 namespace TestNamespace;
+
+                                                 public partial class Vector3
+                                                 {
+                                                     [CacheSourceGenerator.Cacho(MethodName = "TheName")]
+                                                     public string GetName(int number, string hector)
+                                                     {
+                                                         return string.Empty();
+                                                     }
+                                                 }
+                                                 """);
+
+        var syntaxTree = runResult.Should()
+            .ContainFile("Vector3.g.cs").Which;
+        _testOutputHelper.WriteLine(syntaxTree.ToString());
+        
+        syntaxTree.Should()
+            .ContainClass("Vector3").Which
+            .Should().BePublic().And.BePartial().And
+            .ContainMethod("TheName_Evict").Which.Should()
+            .HaveReturnType("void").And.HaveParameters(new (string type, string name)[] {("int", "number"), ("string","hector")}).And
+            .HaveBodyContaining("_cache_.Remove(_key_)");
+
+        syntaxTree.Should()
+            .ContainClass("CacheInit").Which
+            .Should().BeStatic();
+    }
    
 }
