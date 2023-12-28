@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CacheSourceGenerator.Sample
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CacheSourceGenerator.Tests", "CacheSourceGenerator\CacheSourceGenerator.Tests\CacheSourceGenerator.Tests.csproj", "{7BD45803-B3F6-4411-B990-4EF54CB2B757}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playground", "Playground\Playground.csproj", "{31C9E326-DB12-4E2E-B5A0-5B700639E638}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{7BD45803-B3F6-4411-B990-4EF54CB2B757}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7BD45803-B3F6-4411-B990-4EF54CB2B757}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7BD45803-B3F6-4411-B990-4EF54CB2B757}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31C9E326-DB12-4E2E-B5A0-5B700639E638}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31C9E326-DB12-4E2E-B5A0-5B700639E638}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31C9E326-DB12-4E2E-B5A0-5B700639E638}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31C9E326-DB12-4E2E-B5A0-5B700639E638}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

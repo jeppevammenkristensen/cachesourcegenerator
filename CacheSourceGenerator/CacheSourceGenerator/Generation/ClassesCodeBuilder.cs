@@ -154,7 +154,7 @@ internal class ClassesCodeBuilder
         return $$"""
                  {
                   var _key_ = {{key}};
-                  IMemoryCache _cache = {{GetCacheAccess(collection)}};
+                  IMemoryCache _cache_ = {{GetCacheAccess(collection)}};
                   _cache_.Remove(_key_);
                   }
                  """;
@@ -164,9 +164,10 @@ internal class ClassesCodeBuilder
     {
         var methodSymbol = methodData.MethodSymbol;
         
-        var nullThrow = methodSymbol.ReturnType.IsNullable(_types)
-            ? string.Empty
-            : """?? throw new InvalidOperationException("Expected non empty result")""";
+        // Temporarily commented out. 
+        // var nullThrow = methodSymbol.ReturnType.IsNullable(_types)
+        //     ? string.Empty
+        //     : """?? throw new InvalidOperationException("Expected non empty result")""";
 
         var keyGenerator =
             KeyInitialiser(collection, methodSymbol);
@@ -184,7 +185,7 @@ internal class ClassesCodeBuilder
                                 {{ GenerateCacheEntryProcessing(methodData, true) }}
                                 return await {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
                             }); 
-                            return _result_ {{nullThrow}} ;
+                            return _result_;
 
                      }
                      """;    
@@ -199,7 +200,7 @@ internal class ClassesCodeBuilder
                         {
                             {{ GenerateCacheEntryProcessing(methodData, false) }}
                             return {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
-                        }) {{nullThrow}};
+                        });
 
                  }
                  """;
