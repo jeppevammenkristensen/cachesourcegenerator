@@ -19,15 +19,29 @@ public partial class SampleEntity
     [Cacho(MethodName = "GetId", CacheEnricherProcessor = nameof(ProcessCacheEntry))]
     private string? DoGetSomeValue(int id)
     {
+        Console.WriteLine($"Retrieving id {id}");
         return "Someresult";
+    }
+
+
+    [Cacho(MethodName = "GetComplex", CacheEnricherProcessor = nameof(ProcessCacheEntry))]
+    private DateTime DoGetComplex(Complex complex)
+    {
+        Console.WriteLine($"Retrieving complex {complex}");
+        return DateTime.Now;
     }
 
     /// <summary>
     /// Process the cache entry by updating its sliding expiration time to 2 minutes.
     /// </summary>
     /// <param name="entry">The cache entry to be processed.</param>
-    public void ProcessCacheEntry(ICacheEntry entry)
+    private void ProcessCacheEntry(ICacheEntry entry)
     {
         entry.SlidingExpiration = TimeSpan.FromMinutes(2);
     }
+}
+
+public record Complex(string Category, int Version)
+{
+    
 }
