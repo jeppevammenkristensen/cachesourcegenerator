@@ -14,7 +14,7 @@
         <PackageTags>C#; Source Generator; Caching</PackageTags>
         <PackageProjectUrl>https://github.com/jeppevammenkristensen/cachesourcegenerator</PackageProjectUrl>        
         <RepositoryUrl>https://github.com/jeppevammenkristensen/cachesourcegenerator</RepositoryUrl>
-        <PackageReleaseNotes>Update to provide cache entry handling</PackageReleaseNotes>
+        <PackageReleaseNotes>An evict method will be generated. Removed null check when creating or adding to cache</PackageReleaseNotes>
         <PackageReadmeFile>Readme.md</PackageReadmeFile>
         <PackageIcon>Icon.png</PackageIcon>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
