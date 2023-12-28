@@ -53,6 +53,18 @@ public partial class SampleEntity
             return DoGetSomeValue(id);
         });
     }
+    
+    public void GetId_Evict(int id)
+    {
+        var _key_ = new
+        {
+            _MethodName = "DoGetSomeValue",
+            _ClassName = "SampleEntity",
+            id
+        };
+        IMemoryCache _cache_ = _memoryCache;
+        _cache_.Remove(_key_);
+    }
 }
 ```
 
@@ -109,7 +121,7 @@ public partial class SomeClass
         return cache.GetOrCreate(key, entry =>
         {
             return DoSomeMethod(id, age);
-        }) ?? throw new InvalidOperationException("Expected non empty result");
+        });
     }
 }
 ```

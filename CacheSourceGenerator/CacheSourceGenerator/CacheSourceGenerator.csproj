@@ -10,7 +10,7 @@
         <PackageId>CacheSourceGenerator</PackageId>
         <Authors>Jeppe Roi Kristensen</Authors>
         <Description>A tool to wrap a method call with caching</Description>        
-        <VersionPrefix>0.2.0.1</VersionPrefix>
+        <VersionPrefix>0.3.0</VersionPrefix>        
         <PackageTags>C#; Source Generator; Caching</PackageTags>
         <PackageProjectUrl>https://github.com/jeppevammenkristensen/cachesourcegenerator</PackageProjectUrl>        
         <RepositoryUrl>https://github.com/jeppevammenkristensen/cachesourcegenerator</RepositoryUrl>
