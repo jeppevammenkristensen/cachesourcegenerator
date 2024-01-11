@@ -25,7 +25,7 @@ public class AsyncMethodTests
                             _cache = cache;
                         }
                         
-                        [CacheSourceGenerator.Cacho(MethodName = "CacheName")]
+                        [CacheSourceGenerator.GenerateMemoryCache(MethodName = "CacheName")]
                         public Task<int?> CalculateAge()
                         {
                             return 42;

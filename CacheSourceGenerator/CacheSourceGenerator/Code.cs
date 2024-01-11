@@ -4,7 +4,7 @@ public static class Code
 {
     public const string Namespace = "CacheSourceGenerator";
     
-    public const string AttributeName = "CachoAttribute";
+    public const string AttributeName = "GenerateMemoryCacheAttribute";
     
     public const string AddCacheClass = """
                                       private static class CacheInit

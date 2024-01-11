@@ -23,7 +23,7 @@ public class CacheEntryProcessingTests
                            _cache = cache;
                        }
                        
-                       [CacheSourceGenerator.Cacho(MethodName = "CacheName", CacheEnricherProcessor = nameof(CacheEntryProcessor)]
+                       [CacheSourceGenerator.GenerateMemoryCache(MethodName = "CacheName", CacheEnricherProcessor = nameof(CacheEntryProcessor)]
                        public int CalculateAge()
                        {
                            return 42;
@@ -57,7 +57,7 @@ public class CacheEntryProcessingTests
                            _cache = cache;
                        }
                        
-                       [CacheSourceGenerator.Cacho(MethodName = "CacheName", CacheEnricherProcessor = nameof(CacheEntryProcessor)]
+                       [CacheSourceGenerator.GenerateMemoryCache(MethodName = "CacheName", CacheEnricherProcessor = nameof(CacheEntryProcessor)]
                        public int CalculateAge()
                        {
                            return 42;
@@ -96,7 +96,7 @@ public class CacheEntryProcessingTests
                            _cache = cache;
                        }
                        
-                       [CacheSourceGenerator.Cacho(MethodName = "CacheName", CacheEnricherProcessor = nameof(CacheEntryProcessor)]
+                       [CacheSourceGenerator.GenerateMemoryCache(MethodName = "CacheName", CacheEnricherProcessor = nameof(CacheEntryProcessor)]
                        public async Task<int> CalculateAge()
                        {
                            return 42;

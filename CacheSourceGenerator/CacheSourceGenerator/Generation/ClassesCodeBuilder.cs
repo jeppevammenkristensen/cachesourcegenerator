@@ -7,8 +7,34 @@ using CacheSourceGenerator.Utilities;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace CacheSourceGenerator.Generation;
+
+internal class UsingsBuilder
+{
+    private readonly HashSet<string> _usings = new HashSet<string>();
+    
+    public UsingsBuilder(SyntaxList<UsingDirectiveSyntax> source)
+    {
+        foreach (var fullUsingStatement in source.Select(x => x.ToString()))
+        {
+            _usings.Add(fullUsingStatement);
+        }
+    }
+
+    public void AddNamespace(string usingNamespace)
+    {
+        _usings.Add($"using {usingNamespace};");
+    }
+
+    public CompilationUnitSyntax ApplyUsings(CompilationUnitSyntax original)
+    {
+        var compilationUnitSyntax = SyntaxFactory.ParseCompilationUnit(string.Join(" ",_usings));
+        return original.WithUsings(compilationUnitSyntax.Usings);
+    }
+}
+
 
 internal class ClassesCodeBuilder
 {
@@ -30,30 +56,32 @@ internal class ClassesCodeBuilder
         return stringBuilder.ToString();
     }
 
-    private  (CompilationUnitSyntax, ClassDeclarationSyntax) BuildCompilationUnit(EvaluatedClassCollection classDataCollection)
+    /// <summary>
+    /// Builds a compilation unit with a class declaration based on the provided class data collection.
+    /// </summary>
+    /// <param name="classDataCollection">The evaluated class data collection.</param>
+    /// <returns>A tuple containing the built compilation unit and class declaration.</returns>
+    private (CompilationUnitSyntax, ClassDeclarationSyntax) BuildCompilationUnit(EvaluatedClassCollection classDataCollection)
     {
         // Get the compilationunit of the existing class
         var compilation = classDataCollection.ClassDeclaration.Ancestors().OfType<CompilationUnitSyntax>().First();
 
         // Create a new compilation
         var newCompilation = SyntaxFactory.CompilationUnit();
-        
-        // Add the using statements from the existing compilation unit
-        newCompilation = newCompilation.WithUsings(compilation.Usings);
 
+        var usingsBuilder = new UsingsBuilder(compilation.Usings);
+        usingsBuilder.AddNamespace("System"); // Added to support Lazy
+        
         // If we use the Strategy SelfGeneratedFactory we add the relevant using if it's 
         // not already installed
         if (classDataCollection.CacheAccessStrategy == CacheAccessStrategy.FromSelfGeneratedFactory)
         {
+            
             var microsoftExtensionsCachingMemory = "Microsoft.Extensions.Caching.Memory";
-
-            if (newCompilation.Usings.All(x => x.Name?.ToString() != microsoftExtensionsCachingMemory))
-            {
-                newCompilation =
-                    newCompilation.AddUsings(
-                        SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(microsoftExtensionsCachingMemory)));
-            }
+            usingsBuilder.AddNamespace(microsoftExtensionsCachingMemory);
         }
+
+        newCompilation = usingsBuilder.ApplyUsings(newCompilation);
 
         // Create a namespace matching the existing (as a FileScopedNamespaceDeclaration)
         var namespaceDeclarationSyntax = SyntaxFactory.FileScopedNamespaceDeclaration(
@@ -164,11 +192,6 @@ internal class ClassesCodeBuilder
     {
         var methodSymbol = methodData.MethodSymbol;
         
-        // Temporarily commented out. 
-        // var nullThrow = methodSymbol.ReturnType.IsNullable(_types)
-        //     ? string.Empty
-        //     : """?? throw new InvalidOperationException("Expected non empty result")""";
-
         var keyGenerator =
             KeyInitialiser(collection, methodSymbol);
         

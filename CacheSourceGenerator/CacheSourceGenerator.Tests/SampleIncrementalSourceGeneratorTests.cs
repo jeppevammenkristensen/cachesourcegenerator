@@ -35,7 +35,7 @@ public class SampleIncrementalSourceGeneratorTests
                             _cache = cache;
                         }
                         
-                        [CacheSourceGenerator.Cacho(MethodName = "CacheName")]
+                        [CacheSourceGenerator.GenerateMemoryCache(MethodName = "CacheName")]
                         public int CalculateAge()
                         {
                             return 42;
@@ -64,7 +64,7 @@ public class SampleIncrementalSourceGeneratorTests
 
                              public partial class Vector3
                              {
-                                 [CacheSourceGenerator.Cacho(MethodName = "TheName")]
+                                 [CacheSourceGenerator.GenerateMemoryCache(MethodName = "TheName")]
                                  public string GetName(int number, string hector)
                                  {
                                      return string.Empty();
@@ -99,7 +99,7 @@ public class SampleIncrementalSourceGeneratorTests
 
                                                  public partial class Vector3
                                                  {
-                                                     [CacheSourceGenerator.Cacho(MethodName = "TheName")]
+                                                     [CacheSourceGenerator.GenerateMemoryCache(MethodName = "TheName")]
                                                      public string GetName(int number, string hector)
                                                      {
                                                          return string.Empty();
