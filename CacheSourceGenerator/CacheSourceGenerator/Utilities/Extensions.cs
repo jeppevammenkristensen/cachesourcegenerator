@@ -5,6 +5,35 @@ using Microsoft.CodeAnalysis;
 
 namespace CacheSourceGenerator.Utilities;
 
+public static class EnumerableExtensions
+{
+    public static T[] EmptyIfNull<T>(this T[]? source)
+    {
+        if (source == null)
+            return Array.Empty<T>();
+        return source;
+    }
+    
+    public static IEnumerable<T> EmptyIfNull<T>(this IEnumerable<T>? source)
+    {
+        if (source == null)
+        {
+            return Enumerable.Empty<T>();
+        }
+
+        return source;
+    }
+    
+    public static List<T> EmptyIfNull<T>(this List<T>? source)
+    {
+        if (source == null)
+        {
+            return new List<T>();
+        }
+
+        return source;
+    }
+}
 public static class Extensions
 {
     public static T? GetAttributePropertyValue<T>(this AttributeData attributeData, string name, T? valueIfNotPresent = default) where T : notnull
@@ -120,7 +149,7 @@ public static class Extensions
             {
                 if (member.IsAbstract)
                     continue;
-                if (member.IsVirtual && members.Any(x => x.Item1.IsApproximateMemberMatch(member)))
+                if (member.IsVirtual && members.Exists(x => x.Item1.IsApproximateMemberMatch(member)))
                     continue;
                 members.Add((member, false));
             }

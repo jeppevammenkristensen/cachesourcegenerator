@@ -14,7 +14,7 @@ namespace CacheSourceGenerator.Generation;
 internal class UsingsBuilder
 {
     private readonly HashSet<string> _usings = new HashSet<string>();
-    
+
     public UsingsBuilder(SyntaxList<UsingDirectiveSyntax> source)
     {
         foreach (var fullUsingStatement in source.Select(x => x.ToString()))
@@ -30,11 +30,10 @@ internal class UsingsBuilder
 
     public CompilationUnitSyntax ApplyUsings(CompilationUnitSyntax original)
     {
-        var compilationUnitSyntax = SyntaxFactory.ParseCompilationUnit(string.Join(" ",_usings));
+        var compilationUnitSyntax = SyntaxFactory.ParseCompilationUnit(string.Join(" ", _usings));
         return original.WithUsings(compilationUnitSyntax.Usings);
     }
 }
-
 
 internal class ClassesCodeBuilder
 {
@@ -44,7 +43,7 @@ internal class ClassesCodeBuilder
     {
         _types = types;
     }
-    
+
     public string Build(EvaluatedClassCollection classCollection)
     {
         var stringBuilder = new StringBuilder();
@@ -61,7 +60,8 @@ internal class ClassesCodeBuilder
     /// </summary>
     /// <param name="classDataCollection">The evaluated class data collection.</param>
     /// <returns>A tuple containing the built compilation unit and class declaration.</returns>
-    private (CompilationUnitSyntax, ClassDeclarationSyntax) BuildCompilationUnit(EvaluatedClassCollection classDataCollection)
+    private (CompilationUnitSyntax, ClassDeclarationSyntax) BuildCompilationUnit(
+        EvaluatedClassCollection classDataCollection)
     {
         // Get the compilationunit of the existing class
         var compilation = classDataCollection.ClassDeclaration.Ancestors().OfType<CompilationUnitSyntax>().First();
@@ -71,12 +71,11 @@ internal class ClassesCodeBuilder
 
         var usingsBuilder = new UsingsBuilder(compilation.Usings);
         usingsBuilder.AddNamespace("System"); // Added to support Lazy
-        
+
         // If we use the Strategy SelfGeneratedFactory we add the relevant using if it's 
         // not already installed
         if (classDataCollection.CacheAccessStrategy == CacheAccessStrategy.FromSelfGeneratedFactory)
         {
-            
             var microsoftExtensionsCachingMemory = "Microsoft.Extensions.Caching.Memory";
             usingsBuilder.AddNamespace(microsoftExtensionsCachingMemory);
         }
@@ -101,11 +100,11 @@ internal class ClassesCodeBuilder
     private ClassDeclarationSyntax BuildPartialClass(EvaluatedClassCollection collection)
     {
         var existingClass = collection.ClassDeclaration;
-        
+
         // Create a new class with the same modifiers as the existing class
         var newPartialClass = SyntaxFactory.ClassDeclaration(existingClass.Identifier)
             .WithModifiers(existingClass.Modifiers);
-        
+
         // If we are using SelfGeneratedFactory. We parse the and insert a static class that can
         // init and return an IMemoryCache instance
         if (collection.CacheAccessStrategy == CacheAccessStrategy.FromSelfGeneratedFactory)
@@ -114,7 +113,7 @@ internal class ClassesCodeBuilder
                                                          throw new InvalidOperationException(
                                                              "Failed to parse AddCacheClass code"));
         }
-        
+
         // Loop through all methods we have established as valid 
         foreach (var methodData in collection.Methods)
         {
@@ -122,7 +121,7 @@ internal class ClassesCodeBuilder
             var createEvictMethod = CreateEvictMethod(collection, methodData);
             newPartialClass = newPartialClass.AddMembers(wrappingMethod, createEvictMethod);
         }
-        
+
         return newPartialClass;
     }
 
@@ -131,11 +130,11 @@ internal class ClassesCodeBuilder
         var overridingMethodName = methodData.Attribute.GetAttributePropertyValue<string>(Code.MethodName)!;
         var newIdentifier = SyntaxFactory.Identifier($"{overridingMethodName}_Evict");
         var wrappingMethod = CreateMethodSignatureFromExisting(methodData, newIdentifier);
-        wrappingMethod = wrappingMethod.WithReturnType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)));
+        wrappingMethod =
+            wrappingMethod.WithReturnType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)));
         var evictMethodStatement = GenerateEvictMethodStatement(collection, methodData);
 
         return wrappingMethod.WithBody((BlockSyntax) SyntaxFactory.ParseStatement(evictMethodStatement));
-        
     }
 
     private MethodDeclarationSyntax CreateWrappingMethod(EvaluatedClassCollection collection, MethodData methodData)
@@ -145,7 +144,7 @@ internal class ClassesCodeBuilder
         var wrappingMethod = CreateMethodSignatureFromExisting(methodData, newIdentifier);
         var methodStatement = GenerateMethodStatement(collection, methodData);
 
-        return wrappingMethod.WithBody((BlockSyntax)SyntaxFactory.ParseStatement(methodStatement));
+        return wrappingMethod.WithBody((BlockSyntax) SyntaxFactory.ParseStatement(methodStatement));
     }
 
     private MethodDeclarationSyntax CreateMethodSignatureFromExisting(MethodData methodData, SyntaxToken newIdentifier)
@@ -164,7 +163,7 @@ internal class ClassesCodeBuilder
         // Create a list stripping of the access modifers
         var syntaxTokens = newMethod.Modifiers.Where(x => !accessModifiers.Contains(x.Kind())).ToList();
 
-        var newModifiers = new List<SyntaxToken>() { SyntaxFactory.Token(SyntaxKind.PublicKeyword) };
+        var newModifiers = new List<SyntaxToken>() {SyntaxFactory.Token(SyntaxKind.PublicKeyword)};
         if (methodData.MethodSymbol.IsAsyncWithResult(_types))
         {
             newModifiers.Add(SyntaxFactory.Token(SyntaxKind.AsyncKeyword));
@@ -178,7 +177,7 @@ internal class ClassesCodeBuilder
 
     private string GenerateEvictMethodStatement(EvaluatedClassCollection collection, MethodData methodData)
     {
-        var key = KeyInitialiser(collection, methodData.MethodSymbol);
+        var key = KeyInitialiser(collection, methodData);
         return $$"""
                  {
                   var _key_ = {{key}};
@@ -188,52 +187,59 @@ internal class ClassesCodeBuilder
                  """;
     }
 
-    private  string GenerateMethodStatement(EvaluatedClassCollection collection, MethodData methodData)
+    private string GenerateMethodStatement(EvaluatedClassCollection collection, MethodData methodData)
     {
         var methodSymbol = methodData.MethodSymbol;
-        
+
         var keyGenerator =
-            KeyInitialiser(collection, methodSymbol);
-        
-        
+            KeyInitialiser(collection, methodData);
+
+
         if (methodSymbol.IsAsyncWithResult(_types))
         {
             return $$"""
                      {
-                         var _key_ = {{ keyGenerator }};
+                         var _key_ = {{keyGenerator}};
                             
-                            IMemoryCache _cache_ = {{ GetCacheAccess(collection)}};            
+                            IMemoryCache _cache_ = {{GetCacheAccess(collection)}};
                             var _result_ = await _cache_.GetOrCreateAsync(_key_, async _entry_ =>
                             {
-                                {{ GenerateCacheEntryProcessing(methodData, true) }}
+                                {{GenerateCacheEntryProcessing(methodData, true)}}
                                 return await {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
-                            }); 
+                            });
                             return _result_;
 
                      }
-                     """;    
+                     """;
         }
 
         return $$"""
                  {
-                     var _key_ = {{ keyGenerator }};
+                     var _key_ = {{keyGenerator}};
                  
-                        IMemoryCache _cache_ = {{GetCacheAccess(collection)}};    
+                        IMemoryCache _cache_ = {{GetCacheAccess(collection)}};
                         return _cache_.GetOrCreate(_key_, _entry_ =>
                         {
-                            {{ GenerateCacheEntryProcessing(methodData, false) }}
+                            {{GenerateCacheEntryProcessing(methodData, false)}}
                             return {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
                         });
 
                  }
                  """;
-
-
     }
 
-    private static string KeyInitialiser(EvaluatedClassCollection collection, IMethodSymbol methodSymbol)
+    private string KeyInitialiser(EvaluatedClassCollection collection, MethodData methodData)
     {
-        return $$"""new { _MethodName = "{{methodSymbol.Name}}", _ClassName = "{{collection.NamedTypeSymbol.Name}}", {{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}} }""";
+        if (methodData.EvaluatedKeyGenerator == null)
+        {
+            return
+                $$"""new { _MethodName = "{{methodData.MethodSymbol.Name}}", _ClassName = "{{collection.NamedTypeSymbol.Name}}", {{string.Join(",", methodData.MethodSymbol.Parameters.Select(x => x.Name))}} }""";
+        }
+
+        return GenerateEvaluatedMethodCall(methodData, methodData.EvaluatedKeyGenerator,
+            methodData.MethodSymbol.Parameters.Select(x => x.Name).ToArray());
+
+
     }
 
     private string GenerateCacheEntryProcessing(MethodData methodData, bool callerAsync)
@@ -244,7 +250,7 @@ internal class ClassesCodeBuilder
         {
             if (callerAsync)
             {
-                return $"""await { methodData.EvaluatedCacheEnricher.MethodName }(_entry_);""";    
+                return $"""await {methodData.EvaluatedCacheEnricher.MethodName}(_entry_);""";
             }
 
             return $"""{methodData.EvaluatedCacheEnricher.MethodName}(_entry_).GetAwaiter().GetResult();""";
@@ -253,21 +259,65 @@ internal class ClassesCodeBuilder
         {
             return $"""{methodData.EvaluatedCacheEnricher.MethodName}(_entry_);""";
         }
-        
     }
 
     private string GetCacheAccess(EvaluatedClassCollection classCollection)
     {
         return classCollection switch
         {
-            { CacheAccessStrategy: CacheAccessStrategy.FromSelfGeneratedFactory } => "CacheInit.MemoryCache",
+            {CacheAccessStrategy: CacheAccessStrategy.FromSelfGeneratedFactory} => "CacheInit.MemoryCache",
             {
                 CacheAccessStrategy: CacheAccessStrategy.FromMember,
                 CacheAccessSource: CacheMemberAccessSource.PropertyOrField
             } => classCollection.CacheMemberAccessName!,
-            { CacheAccessStrategy: CacheAccessStrategy.FromMember, CacheAccessSource: CacheMemberAccessSource.Method }
+            {CacheAccessStrategy: CacheAccessStrategy.FromMember, CacheAccessSource: CacheMemberAccessSource.Method}
                 => $"{classCollection.CacheMemberAccessName}()",
             _ => throw new InvalidOperationException("Should not be fired")
         };
     }
+
+
+    /// <summary>
+    /// Generates an evaluated method call by generating the invocation string and passing it to the GenerateInvocation method.
+    /// </summary>
+    /// <param name="collection">The collection of evaluated classes.</param>
+    /// <param name="methodData">The method data.</param>
+    /// <param name="method">The evaluated method.</param>
+    /// <param name="parameterNames">The parameter names used in the method call.</param>
+    /// <returns>The generated evaluated method call.</returns>
+    internal string GenerateEvaluatedMethodCall(MethodData methodData,
+        EvaluatedMethod method, params string[] parameterNames)
+    {
+        
+        var invocation = $"{method.MethodName}({string.Join(",", parameterNames.EmptyIfNull())})";
+        return GenerateInvocation(methodData, method, invocation);
+
+    }
+
+    /// <summary>
+    /// Generates the invocation statement for a given method.
+    /// </summary>
+    /// <param name="methodData">The method data.</param>
+    /// <param name="method">The evaluated method.</param>
+    /// <param name="invocation">The original invocation statement.</param>
+    /// <returns>The generated invocation statement.</returns>
+    private string GenerateInvocation(MethodData methodData, EvaluatedMethod method, string invocation)
+    {
+        if (methodData.CallerIsAsync)
+        {
+            return method switch
+            {
+                {IsAsync: true} => $"await {invocation}",
+                {IsAsync: false} => invocation
+            };
+        }
+
+        return method switch
+        {
+            {IsAsync: true} => $"{invocation}.GetAwaiter().GetResult()",
+            {IsAsync: false} => invocation
+        };
+
+    }
 }
+

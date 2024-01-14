@@ -34,13 +34,21 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
                                                         /// <summary>
                                                         /// The name of the generated cache method 
                                                         /// </summary>
-                                                        public required string {{Code.MethodName}} { get;set; }
+                                                        public string {{Code.MethodName}} { get;set; }
                                                         
                                                         /// <summary>
                                                         /// The name of a method in the current class that takes
                                                         /// an CacheEntry and processes it 
                                                         /// </summary>
                                                         public string? {{Code.CacheEnricherProcessor}} { get;set; }
+                                                        
+                                                        
+                                                        /// <summary>
+                                                         /// The name of a method in the current class that can 
+                                                         /// generate a custom cache key. The method must take the same parameters
+                                                         /// as the method being decorated. But can return any type.
+                                                         /// </summary>
+                                                        public string? {{Code.KeyGenerator}} {get;set;}
                                                      }
                                                  }
                                                  """;
@@ -223,40 +231,10 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
                         var attribute = methodSymbol.GetAttributes().FirstOrDefault(x =>
                             x.AttributeClass?.ToDisplayString() == $"{Namespace}.{Code.AttributeName}") ??
                                      throw new InvalidOperationException("Attribute should be available");
-                        var methodData = new MethodData(methodSymbol, methodDeclarationSyntax, attribute);
+                        var methodData = new MethodData(methodSymbol, methodDeclarationSyntax, attribute, types);
 
-                        var cacheEnricher = attribute.GetAttributePropertyValue<string>(Code.CacheEnricherProcessor, null);
-                        if (cacheEnricher != null)
-                        {
-                            var methodSpec = SpecificationRecipes.MethodWithParametersSpec(1);
-                            var typeParameterSpec = new TypeOfSpecification(types.CacheEntry).SetExactMatch();
-
-                            var method = classSymbol
-                                .GetAllMembers()
-                                .Select(x => x.member)
-                                .OfType<IMethodSymbol>()
-                                .Where(x => x.Name == cacheEnricher)
-                                .Where(methodSpec)
-                                .FirstOrDefault(m => typeParameterSpec.IsSatisfiedBy(m.Parameters[0].Type));
-                            if (method == null)
-                            {
-                                context.ReportDiagnostic(Diagnostic.Create(
-                                    new DiagnosticDescriptor(DiagnosticIds.Id_004_CacheEntryMethodMismatch,
-                                        $"No correct method match was found for {Code.CacheEnricherProcessor} {cacheEnricher}",
-                                        "This must match a method that takes Exactly 1 parameter of type ICacheEntry",
-                                        "General",
-                                        DiagnosticSeverity.Error,
-                                        true),
-                                    methodData.MethodDeclarationSyntax.GetLocation()));
-                            }
-                            else
-                            {
-                                methodData.EvaluatedCacheEnricher = new EvaluatedCacheEnricher(method,types);
-                            }
-                        }
-                        
-
-
+                        HandleCacheEnricher(context, attribute, types, classSymbol, methodData);
+                        HandleKeyGenerator(context, attribute, types, classSymbol, methodData);
                         collection.AddMethod(methodData);
                     }
                 }
@@ -274,7 +252,96 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
         }
     }
 
+    /// <summary>
+    /// Handles checking for the <see cref="Code.CacheEnricherProcessor"/> attribute and
+    /// adding relevant data
+    /// </summary>
+    /// <param name="context">The source production context.</param>
+    /// <param name="attribute">The cache enricher attribute data.</param>
+    /// <param name="types">The lazy types.</param>
+    /// <param name="classSymbol">The class symbol.</param>
+    /// <param name="methodData">The method data.</param>
+    private static void HandleCacheEnricher(SourceProductionContext context, AttributeData attribute, LazyTypes types,
+        INamedTypeSymbol classSymbol, MethodData methodData)
+    {
+        var cacheEnricher = attribute.GetAttributePropertyValue<string>(Code.CacheEnricherProcessor, null);
+        if (cacheEnricher != null)
+        {
+            var methodSpec = SpecificationRecipes.MethodWithParametersSpec(1);
+            var typeParameterSpec = new TypeOfSpecification(types.CacheEntry).SetExactMatch();
+
+            var method = classSymbol
+                .GetAllMembers()
+                .Select(x => x.member)
+                .OfType<IMethodSymbol>()
+                .Where(x => x.Name == cacheEnricher)
+                .Where(methodSpec)
+                .FirstOrDefault(m => typeParameterSpec.IsSatisfiedBy(m.Parameters[0].Type));
+            if (method == null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    new DiagnosticDescriptor(DiagnosticIds.Id_004_CacheEntryMethodMismatch,
+                        $"No correct method match was found for {Code.CacheEnricherProcessor} {cacheEnricher}",
+                        "This must match a method that takes Exactly 1 parameter of type ICacheEntry",
+                        "General",
+                        DiagnosticSeverity.Error,
+                        true),
+                    methodData.MethodDeclarationSyntax.GetLocation()));
+            }
+            else
+            {
+                methodData.EvaluatedCacheEnricher = new EvaluatedCacheEnricher(method,types);
+            }
+        }
+    }
     
+    private static void HandleKeyGenerator(SourceProductionContext context, AttributeData attribute, LazyTypes types,
+        INamedTypeSymbol classSymbol, MethodData methodData)
+    {
+        var keyGenerator = attribute.GetAttributePropertyValue<string>(Code.KeyGenerator, null);
+        if (keyGenerator != null)
+        {
+            var methodSpec = SpecificationRecipes.KeyGeneratorMatch(methodData.MethodSymbol);
+
+            var candidates = classSymbol
+                .GetAllMembers()
+                .Select(x => x.member)
+                .OfType<IMethodSymbol>()
+                .Where(x => x.Name == keyGenerator).ToImmutableArray();
+
+
+            if (candidates.Length == 0)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(new DiagnosticDescriptor(
+                        DiagnosticIds.Id_005_KeyGeneratorNoCandidates,
+                        $"No candidates found matching the name {keyGenerator}",
+                        $"Was not able to find a candidate that has the name {keyGenerator}",
+                        "General",
+                        DiagnosticSeverity.Error,
+                        true),
+                    methodData.MethodDeclarationSyntax.GetLocation()));
+                return;
+            }
+
+            var match = candidates.FirstOrDefault(methodSpec);
+                
+            if (match == null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(new DiagnosticDescriptor(
+                        DiagnosticIds.Id_006_KeyGeneratorNoParameterMatch,
+                        $"No candidates with correct amount of parameters found for {keyGenerator}",
+                        $"Was not able to find a candidate with the name {keyGenerator} that has the parameters match",
+                        "General",
+                        DiagnosticSeverity.Error,
+                        true),
+                    methodData.MethodDeclarationSyntax.GetLocation()));
+            }
+            else
+            {
+                methodData.EvaluatedKeyGenerator = new EvaluatedKeyGenerator(match,types);
+            }
+        }
+    }
 }
 
 
@@ -293,32 +360,69 @@ internal enum CacheMemberAccessSource
 
 public class MethodData
 {
+    private readonly LazyTypes _types;
     public IMethodSymbol MethodSymbol { get; }
     public MethodDeclarationSyntax MethodDeclarationSyntax { get; }
     public AttributeData Attribute { get; }
 
-    public MethodData(IMethodSymbol methodSymbol, MethodDeclarationSyntax methodDeclarationSyntax, AttributeData attribute)
+    /// <summary>
+    /// Gets a value indicating whether the caller is an asynchronous method.
+    /// </summary>
+    /// <remarks>
+    /// The value of this property is determined by checking if the <see cref="MethodSymbol"/> is an asynchronous method
+    /// that returns a result.
+    /// </remarks>
+    /// <value>
+    /// <c>true</c> if the caller is an asynchronous method; otherwise, <c>false</c>.
+    /// </value>
+    public bool CallerIsAsync => MethodSymbol.IsAsyncWithResult(_types);
+
+    public MethodData(IMethodSymbol methodSymbol, MethodDeclarationSyntax methodDeclarationSyntax,
+        AttributeData attribute, LazyTypes types)
     {
+        _types = types;
         MethodSymbol = methodSymbol;
         MethodDeclarationSyntax = methodDeclarationSyntax;
         Attribute = attribute;
     }
     
     public EvaluatedCacheEnricher? EvaluatedCacheEnricher { get; set; }
+    public EvaluatedKeyGenerator? EvaluatedKeyGenerator { get; set; }
 }
 
-public class EvaluatedCacheEnricher
+public abstract class EvaluatedMethod
 {
-    private readonly IMethodSymbol _method;
-    private readonly LazyTypes _types;
+    protected readonly IMethodSymbol _method;
+    protected readonly LazyTypes _lazyTypes;
 
-    public bool IsAsync => _method.ReturnType.IsAsync(_types);
-    public string MethodName => _method.Name;
-    
-    public EvaluatedCacheEnricher(IMethodSymbol method, LazyTypes types)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EvaluatedMethod"/> class with the specified method symbol and lazy types.
+    /// </summary>
+    /// <param name="method">The method symbol representing the evaluated method.</param>
+    /// <param name="lazyTypes">The lazy types used for evaluation.</param>
+    protected EvaluatedMethod(IMethodSymbol method, LazyTypes lazyTypes)
     {
         _method = method;
-        _types = types;
+        _lazyTypes = lazyTypes;
+    }
+
+    public bool IsAsync => _method.ReturnType.IsAsync(_lazyTypes);
+    public string MethodName => _method.Name;
+    public bool IsStatic => _method.IsStatic;
+    
+}
+
+public class EvaluatedKeyGenerator : EvaluatedMethod
+{
+    public EvaluatedKeyGenerator(IMethodSymbol method, LazyTypes lazyTypes) : base(method, lazyTypes)
+    {
+    }
+}
+
+public class EvaluatedCacheEnricher : EvaluatedMethod
+{
+    public EvaluatedCacheEnricher(IMethodSymbol method, LazyTypes lazyTypes) : base(method, lazyTypes)
+    {
     }
 }
 

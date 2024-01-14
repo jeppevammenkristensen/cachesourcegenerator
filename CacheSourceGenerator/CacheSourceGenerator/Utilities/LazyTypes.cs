@@ -4,11 +4,13 @@ using Microsoft.CodeAnalysis;
 
 namespace CacheSourceGenerator.Utilities;
 
+/// <summary>
+/// Represents a class that provides lazy-loading of various type symbols.
+/// </summary>
 public class LazyTypes
 {
-    private readonly Compilation _compilation;
-    private Lazy<INamedTypeSymbol?> _listGeneric;
-    private Lazy<INamedTypeSymbol?> _hashSet;
+    private readonly Lazy<INamedTypeSymbol?> _listGeneric;
+    private readonly Lazy<INamedTypeSymbol?> _hashSet;
     private readonly Lazy<INamedTypeSymbol?> _collection;
     private readonly Lazy<INamedTypeSymbol?> _task;
     private readonly Lazy<INamedTypeSymbol?> _genericTask;

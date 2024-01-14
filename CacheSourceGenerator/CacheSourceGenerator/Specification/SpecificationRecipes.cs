@@ -1,4 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Linq;
+using Microsoft.CodeAnalysis;
 
 namespace CacheSourceGenerator.Specification;
 
@@ -21,14 +23,17 @@ public static class SpecificationRecipes
 
     public static Specification<ISymbol> IsPublic => new IsPublicSpecification<ISymbol>();
 
-    public static IsInstanceSpecification<ISymbol> IsInstance = new IsInstanceSpecification<ISymbol>();
-    public static Specification<ISymbol> IsStatic = IsInstance.Not(); 
+    public static readonly IsInstanceSpecification<ISymbol> IsInstance = new();
+    public static readonly Specification<ISymbol> IsStatic = IsInstance.Not(); 
     
     public static MethodSpecification<ISymbol> MethodWithNoParametersSpec =>
         new MethodSpecification<ISymbol>().WithParameters(0);
     
     public static MethodSpecification<ISymbol> MethodWithParametersSpec(uint parameters) =>
         new MethodSpecification<ISymbol>().WithParameters(parameters);
+
+    public static KeyGeneratorMethodMatchSpecification<ISymbol> KeyGeneratorMatch(IMethodSymbol source) =>
+        new KeyGeneratorMethodMatchSpecification<ISymbol>(source);
 
     public static MethodSpecification<ISymbol> MethodWithTypeSpec(Specification<ITypeSymbol> typeSpec) =>
         new MethodSpecification<ISymbol>().WithTypeSpec(typeSpec);
@@ -49,4 +54,37 @@ public static class SpecificationRecipes
 
 
 
+}
+
+public class KeyGeneratorMethodMatchSpecification<T>(IMethodSymbol source) : Specification<T>
+    where T : ISymbol
+{
+    public override bool IsSatisfiedBy(T obj)
+    {
+        if (obj is not IMethodSymbol methodSymbol)
+        {
+            return false;
+        }
+
+        if (methodSymbol.ReturnsVoid)
+        {
+            return false;
+        }
+
+        if (methodSymbol.Parameters.Length != source.Parameters.Length)
+        {
+            return false; 
+        }
+        
+        foreach (var (left, right) in methodSymbol.Parameters.Zip(source.Parameters, (left,right) => (left,right)))
+        {
+            if (!left.Type.Equals(right.Type, SymbolEqualityComparer.Default))
+            {
+                return false;
+            }
+        }
+
+        return true;
+
+    }
 }
