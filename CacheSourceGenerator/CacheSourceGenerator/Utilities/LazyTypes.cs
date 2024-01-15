@@ -29,7 +29,6 @@ public class LazyTypes
 
     public LazyTypes(Compilation compilation)
     {
-        _compilation = compilation;
         _listGeneric = new Lazy<INamedTypeSymbol?>(() => compilation.GetTypeByMetadataName("System.Collections.Generic.List`1"));
         _hashSet = new Lazy<INamedTypeSymbol?>(() =>
             compilation.GetTypeByMetadataName("System.Collections.Generic.HashSet`1"));

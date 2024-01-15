@@ -34,7 +34,7 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
                                                         /// <summary>
                                                         /// The name of the generated cache method 
                                                         /// </summary>
-                                                        public string {{Code.MethodName}} { get;set; }
+                                                        public string {{Code.MethodName}} { get;init; } = default!;
                                                         
                                                         /// <summary>
                                                         /// The name of a method in the current class that takes
@@ -60,7 +60,7 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
         context.RegisterPostInitializationOutput(ctx =>
         {
             ctx.AddSource(
-                "CachoAttribute.g.cs",
+                "GenerateMemoryCache.g.cs",
                 SourceText.From(AttributeSourceCode, Encoding.UTF8));
         });
         
@@ -360,6 +360,7 @@ internal enum CacheMemberAccessSource
 
 public class MethodData
 {
+    
     private readonly LazyTypes _types;
     public IMethodSymbol MethodSymbol { get; }
     public MethodDeclarationSyntax MethodDeclarationSyntax { get; }
@@ -376,6 +377,8 @@ public class MethodData
     /// <c>true</c> if the caller is an asynchronous method; otherwise, <c>false</c>.
     /// </value>
     public bool CallerIsAsync => MethodSymbol.IsAsyncWithResult(_types);
+    
+    public bool ReturnTypeIsNullable => MethodSymbol.ReturnType.IsNullable(_types);
 
     public MethodData(IMethodSymbol methodSymbol, MethodDeclarationSyntax methodDeclarationSyntax,
         AttributeData attribute, LazyTypes types)
@@ -384,10 +387,29 @@ public class MethodData
         MethodSymbol = methodSymbol;
         MethodDeclarationSyntax = methodDeclarationSyntax;
         Attribute = attribute;
+        _lazyUnderlyingType = new Lazy<ITypeSymbol>(() => MethodSymbol.ReturnType.GetUnderlyingType(_types));
     }
-    
+
+    private readonly Lazy<ITypeSymbol> _lazyUnderlyingType;
+
+    /// <summary>
+    /// Gets or sets the EvaluatedCacheEnricher property.
+    /// </summary>
+    /// <remarks>
+    /// This property represents the evaluated cache enricher used for caching and enriching data.
+    /// The property allows for storing and retrieving instances of the <see cref="EvaluatedCacheEnricher"/> class.
+    /// </remarks>
+    /// <value>
+    /// The EvaluatedCacheEnricher instance or null if not set.
+    /// </value>
     public EvaluatedCacheEnricher? EvaluatedCacheEnricher { get; set; }
+
+    /// <summary>
+    /// Gets or sets the evaluated key generator for this property.
+    /// </summary>
     public EvaluatedKeyGenerator? EvaluatedKeyGenerator { get; set; }
+
+    public ITypeSymbol UnderlyingType => _lazyUnderlyingType.Value;
 }
 
 public abstract class EvaluatedMethod

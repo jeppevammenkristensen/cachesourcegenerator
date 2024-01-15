@@ -194,6 +194,13 @@ internal class ClassesCodeBuilder
         var keyGenerator =
             KeyInitialiser(collection, methodData);
 
+        var conditionalBang = methodData switch
+        {
+            {UnderlyingType.IsValueType: true} => string.Empty,
+            {ReturnTypeIsNullable: false} => "!",
+            _ => string.Empty
+        };
+
 
         if (methodSymbol.IsAsyncWithResult(_types))
         {
@@ -207,7 +214,7 @@ internal class ClassesCodeBuilder
                                 {{GenerateCacheEntryProcessing(methodData, true)}}
                                 return await {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
                             });
-                            return _result_;
+                            return _result_{{conditionalBang}};
 
                      }
                      """;
@@ -218,11 +225,12 @@ internal class ClassesCodeBuilder
                      var _key_ = {{keyGenerator}};
                  
                         IMemoryCache _cache_ = {{GetCacheAccess(collection)}};
-                        return _cache_.GetOrCreate(_key_, _entry_ =>
+                        var _result_ = _cache_.GetOrCreate(_key_, _entry_ =>
                         {
                             {{GenerateCacheEntryProcessing(methodData, false)}}
                             return {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
                         });
+                        return _result_{{conditionalBang}};
 
                  }
                  """;

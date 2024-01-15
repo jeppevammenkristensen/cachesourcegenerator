@@ -40,7 +40,7 @@ public static class Extensions
     {
         if (attributeData == null) throw new ArgumentNullException(nameof(attributeData));
 
-        var named = attributeData.NamedArguments.Select(x => new {x.Key, Value = x.Value})
+        var named = attributeData.NamedArguments.Select(x => new {x.Key, x.Value})
             .FirstOrDefault(x => x.Key == name);
         if (named != null)
         {
@@ -51,11 +51,10 @@ public static class Extensions
                 _ => (T?) named.Value.Value
             };
         }
-
-        //attributeData.ConstructorArguments.FirstOrDefault(x => x.())
-
         return valueIfNotPresent;
     }
+    
+    
 
     public static bool IsAsyncWithResult(this IMethodSymbol methodSymbol, LazyTypes _types)
     {
@@ -68,6 +67,28 @@ public static class Extensions
                typeSymbol.OriginalDefinition.Equals(types.GenericTask, SymbolEqualityComparer.Default);
     }
 
+    public static ITypeSymbol GetUnderlyingType(this ITypeSymbol typeSymbol, LazyTypes types)
+    { 
+        if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol )
+        {
+            if (namedTypeSymbol.OriginalDefinition.Equals(types.GenericTask, SymbolEqualityComparer.Default))
+            {
+                return GetUnderlyingType(namedTypeSymbol.TypeArguments[0], types);    
+            }
+
+            if (namedTypeSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+            {
+                return GetUnderlyingType(namedTypeSymbol.TypeArguments[0], types);
+            }
+
+            return GetUnderlyingType(typeSymbol, types);
+        }
+
+        return typeSymbol;
+
+
+    }
+    
     public static bool IsNullable(this ITypeSymbol typeSymbol, LazyTypes _types)
     {
         var candidate = typeSymbol;
