@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using FluentAssertions.Primitives;
@@ -89,4 +90,6 @@ public class MethodSyntaxAssertion : ReferenceTypeAssertions<MethodDeclarationSy
 
         return new AndConstraint<MethodSyntaxAssertion>(this);
     }
+
+    public BlockSyntax MethodBody => Subject.Body ?? throw new InvalidOperationException($"Body was null for method {Subject.Identifier}");
 }

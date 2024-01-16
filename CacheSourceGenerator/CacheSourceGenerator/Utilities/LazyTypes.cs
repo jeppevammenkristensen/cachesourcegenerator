@@ -16,6 +16,7 @@ public class LazyTypes
     private readonly Lazy<INamedTypeSymbol?> _genericTask;
     private readonly Lazy<INamedTypeSymbol?> _memoryCache;
     private readonly Lazy<INamedTypeSymbol?> _cacheEntry;
+    private readonly Lazy<INamedTypeSymbol> _ignoreKey;
 
 
     public INamedTypeSymbol? ListGeneric => _listGeneric.Value;
@@ -26,6 +27,7 @@ public class LazyTypes
     public INamedTypeSymbol? GenericTask => _genericTask.Value;
     public INamedTypeSymbol? MemoryCache => _memoryCache.Value;
     public INamedTypeSymbol? CacheEntry => _cacheEntry.Value;
+    public INamedTypeSymbol IgnoreKeyAttribute => _ignoreKey.Value;
 
     public LazyTypes(Compilation compilation)
     {
@@ -41,6 +43,8 @@ public class LazyTypes
             compilation.GetTypesByMetadataName("Microsoft.Extensions.Caching.Memory.IMemoryCache").FirstOrDefault());
         _cacheEntry = new Lazy<INamedTypeSymbol?>(() =>
             compilation.GetTypesByMetadataName("Microsoft.Extensions.Caching.Memory.ICacheEntry").FirstOrDefault());
+        _ignoreKey = new Lazy<INamedTypeSymbol>(() =>
+            compilation.GetTypesByMetadataName("CacheSourceGenerator.IgnoreKeyAttribute").First());
     }
 
     /// <summary>

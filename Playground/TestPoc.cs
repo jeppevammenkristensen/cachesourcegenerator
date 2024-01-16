@@ -4,7 +4,7 @@ namespace Playground;
 
 public class TestPoc
 {
-    public int? DoSomething()
+    public int? DoSomething([IgnoreKey]int something)
     {
         var cache = new MemoryCache(new MemoryCacheOptions());
         return cache.GetOrCreate("Hej", c =>
@@ -12,4 +12,9 @@ public class TestPoc
             return 5;
         })!;
     }
+}
+[AttributeUsage(AttributeTargets.Parameter)]
+public class IgnoreKeyAttribute : Attribute
+{
+    
 }

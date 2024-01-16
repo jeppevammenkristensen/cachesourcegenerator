@@ -22,4 +22,5 @@ public static class Code
     public const string MethodName = "MethodName";
     public const string CacheEnricherProcessor = "CacheEnricherProcessor";
     public const string KeyGenerator = "KeyGenerator";
+    public const string IgnoreAttributeName = "IgnoreKeyAttribute"; 
 }
