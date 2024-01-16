@@ -200,7 +200,7 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
                     context.ReportDiagnostic(Diagnostic.Create(
                         new DiagnosticDescriptor(DiagnosticIds.Id_003_MemoryCacheRequired,
                             "Microsoft.Extensions.Caching.Memory is required to be installed or an item of type IMemoryCache should be available",
-                            "No valid source to provide IMemoryCache available. This required Micorosft.Extensions.Caching.Memory to be installed",
+                            "No valid source to provide IMemoryCache available. It is required to install Micorosft.Extensions.Caching.Memory to be installed",
                             "General",
                             DiagnosticSeverity.Error,
                             true),
