@@ -18,9 +18,12 @@ public abstract class SourceGeneratorTests
         string methodName)
     {
         result.Diagnostics.Should().NotContain(x => x.Severity == DiagnosticSeverity.Error);
-        var matchedClass = result.Should().ContainFile($"{className}.g.cs").Which.Should()
-            .ContainClass(className).Which;
+        return AssertAndRetrieveClass(result, className).Should().ContainMethod(methodName).Which;
+    }
 
-        return matchedClass.Should().ContainMethod(methodName).Which;
+    protected ClassDeclarationSyntax AssertAndRetrieveClass(GeneratorDriverRunResult result,string className)
+    {
+        return result.Should().ContainFile($"{className}.g.cs").Which.Should()
+            .ContainClass(className).Which;
     }
 }

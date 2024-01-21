@@ -54,4 +54,41 @@ public class IgnoreKeyTests : SourceGeneratorTests
             .Where(x => x.Expression is IdentifierNameSyntax ins && ins.Identifier.ToString() == "ignored").Should()
             .BeEmpty("Because key intializer should not contain ignored");
     }
+    
+    [Fact]
+    public void IgnoreAttributesOnMethodsAreNotIncludedInOutput()
+    {
+        var str = """
+                  using Microsoft.Extensions.Caching.Memory;
+                  namespace TestNamespace;
+
+                  public partial class TestClass
+                  {
+                       private readonly IMemoryCache _cache;
+                  
+                       public TestClass(IMemoryCache cache)
+                       {
+                           _cache = cache;
+                       }
+                       
+                       [CacheSourceGenerator.GenerateMemoryCache(MethodName = "CalculateAge"]
+                       public int DoCalculateAge(int id, [CacheSourceGenerator.IgnoreKey]int ignored)
+                       {
+                           return id;
+                       }
+                       
+                       public object KeyGenerator()
+                       {
+                            return null;
+                       }
+                  }
+                  """;
+
+        var result = Generator.GenerateResult(str);
+        var generatedClass = AssertAndRetrieveClass(result, "TestClass");
+
+        generatedClass.ToString().Should().NotContain("IgnoreKey");
+
+
+    }
 }

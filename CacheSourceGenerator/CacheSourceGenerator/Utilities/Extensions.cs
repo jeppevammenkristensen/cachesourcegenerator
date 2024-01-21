@@ -33,6 +33,15 @@ public static class EnumerableExtensions
 
         return source;
     }
+
+    public static SeparatedSyntaxList<T> ToSeparatedSyntaxList<T>(this IEnumerable<T> source) where T : SyntaxNode
+    {
+        if (source == null) throw new ArgumentNullException(nameof(source));
+
+        var syntaxList = new SeparatedSyntaxList<T>();
+        syntaxList.AddRange(source);
+        return syntaxList;
+    }
 }
 public static class Extensions
 {

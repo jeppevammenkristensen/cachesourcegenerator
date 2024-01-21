@@ -12,8 +12,8 @@ public partial class Some
 public partial class Another
 {
     
-    [GenerateMemoryCache(MethodName = "Angriest", KeyGenerator = nameof(GetCacheKey))]
-    public string DoAngry(int factor, string customId)
+    [GenerateMemoryCache(MethodName = "Angriest")]
+    public string DoAngry([IgnoreKey]int factor, string customId)
     {
         return "Bruce Banner";
     }

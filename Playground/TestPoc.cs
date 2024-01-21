@@ -1,9 +1,11 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using CacheSourceGenerator;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Playground;
 
-public class TestPoc
+public partial class TestPoc
 {
+    
     public int? DoSomething([IgnoreKey]int something)
     {
         var cache = new MemoryCache(new MemoryCacheOptions());
@@ -13,8 +15,4 @@ public class TestPoc
         })!;
     }
 }
-[AttributeUsage(AttributeTargets.Parameter)]
-public class IgnoreKeyAttribute : Attribute
-{
-    
-}
+

@@ -36,10 +36,13 @@ internal class UsingsBuilder
 internal class ClassesCodeBuilder
 {
     private readonly LazyTypes _types;
+    private IgnoreKeyRemover _ignoreKeyRemover;
+
 
     public ClassesCodeBuilder(LazyTypes types)
     {
         _types = types;
+        _ignoreKeyRemover = new IgnoreKeyRemover();
     }
 
     public string Build(EvaluatedClassCollection classCollection)
@@ -156,6 +159,14 @@ internal class ClassesCodeBuilder
         var newMethod = methodData.MethodDeclarationSyntax.WithIdentifier(newIdentifier);
         // Clear attributes
         newMethod = newMethod.WithAttributeLists(SyntaxFactory.List<AttributeListSyntax>());
+        
+        // remove ignore key
+        newMethod = _ignoreKeyRemover.Visit(newMethod) switch
+        {
+            MethodDeclarationSyntax m => m,
+            { } o => throw new InvalidOperationException($"Method was unexpectedly of type {o.GetType().Name}"),
+            _ => throw new NullReferenceException("Converted was unexpectedly null"),
+        };
 
         HashSet<SyntaxKind> accessModifiers = new HashSet<SyntaxKind>(new[]
         {
@@ -324,6 +335,18 @@ internal class ClassesCodeBuilder
             {IsAsync: false} => invocation
         };
 
+    }
+
+    public class IgnoreKeyRemover : CSharpSyntaxRewriter
+    {
+        public override SyntaxNode? VisitAttributeList(AttributeListSyntax node)
+        {
+            var attributesWithoutIgnoreKey = node.Attributes
+                .Where(attribute => attribute.Name.ToString() != "IgnoreKey")
+                .ToSeparatedSyntaxList();
+            
+            return base.VisitAttributeList(node.WithAttributes(attributesWithoutIgnoreKey));
+        }
     }
 }
 
