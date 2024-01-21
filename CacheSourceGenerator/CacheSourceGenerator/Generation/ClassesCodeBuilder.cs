@@ -95,6 +95,11 @@ internal class ClassesCodeBuilder
         return newCompilation;
     }
 
+    /// <summary>
+    /// Builds a partial class based on the provided evaluated class collection.
+    /// </summary>
+    /// <param name="collection">The evaluated class collection.</param>
+    /// <returns>The built partial class as a ClassDeclarationSyntax object.</returns>
     private ClassDeclarationSyntax BuildPartialClass(EvaluatedClassCollection collection)
     {
         var existingClass = collection.ClassDeclaration;
@@ -209,7 +214,7 @@ internal class ClassesCodeBuilder
                             IMemoryCache _cache_ = {{GetCacheAccess(collection)}};
                             var _result_ = await _cache_.GetOrCreateAsync(_key_, async _entry_ =>
                             {
-                                {{GenerateCacheEntryProcessing(methodData, true)}}
+                                {{GenerateCacheEntryProcessing(methodData)}}
                                 return await {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
                             });
                             return _result_{{conditionalBang}};
@@ -225,7 +230,7 @@ internal class ClassesCodeBuilder
                         IMemoryCache _cache_ = {{GetCacheAccess(collection)}};
                         var _result_ = _cache_.GetOrCreate(_key_, _entry_ =>
                         {
-                            {{GenerateCacheEntryProcessing(methodData, false)}}
+                            {{GenerateCacheEntryProcessing(methodData)}}
                             return {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
                         });
                         return _result_{{conditionalBang}};
@@ -248,25 +253,19 @@ internal class ClassesCodeBuilder
 
     }
 
-    private string GenerateCacheEntryProcessing(MethodData methodData, bool callerAsync)
+    private string GenerateCacheEntryProcessing(MethodData methodData)
     {
         if (methodData.EvaluatedCacheEnricher == null)
             return string.Empty;
-        if (methodData.EvaluatedCacheEnricher.IsAsync)
-        {
-            if (callerAsync)
-            {
-                return $"""await {methodData.EvaluatedCacheEnricher.MethodName}(_entry_);""";
-            }
 
-            return $"""{methodData.EvaluatedCacheEnricher.MethodName}(_entry_).GetAwaiter().GetResult();""";
-        }
-        else
-        {
-            return $"""{methodData.EvaluatedCacheEnricher.MethodName}(_entry_);""";
-        }
+        return $"{GenerateEvaluatedMethodCall(methodData, methodData.EvaluatedCacheEnricher, "_entry_")};";
     }
 
+    /// <summary>
+    /// Gets the cache access string based on the provided class collection.
+    /// </summary>
+    /// <param name="classCollection">The evaluated class collection.</param>
+    /// <returns>The cache access string.</returns>
     private string GetCacheAccess(EvaluatedClassCollection classCollection)
     {
         return classCollection switch
@@ -276,8 +275,10 @@ internal class ClassesCodeBuilder
                 CacheAccessStrategy: CacheAccessStrategy.FromMember,
                 CacheAccessSource: CacheMemberAccessSource.PropertyOrField
             } => classCollection.CacheMemberAccessName!,
-            {CacheAccessStrategy: CacheAccessStrategy.FromMember, CacheAccessSource: CacheMemberAccessSource.Method}
-                => $"{classCollection.CacheMemberAccessName}()",
+            {
+                CacheAccessStrategy: CacheAccessStrategy.FromMember, 
+                CacheAccessSource: CacheMemberAccessSource.Method
+            } => $"{classCollection.CacheMemberAccessName}()",
             _ => throw new InvalidOperationException("Should not be fired")
         };
     }
@@ -293,14 +294,14 @@ internal class ClassesCodeBuilder
     internal string GenerateEvaluatedMethodCall(MethodData methodData,
         EvaluatedMethod method, params string[] parameterNames)
     {
-        
         var invocation = $"{method.MethodName}({string.Join(",", parameterNames.EmptyIfNull())})";
         return GenerateInvocation(methodData, method, invocation);
 
     }
 
     /// <summary>
-    /// Generates the invocation statement for a given method.
+    /// Generates the correct invocation based on if the method being called is async and
+    /// if the method calling it is async
     /// </summary>
     /// <param name="methodData">The method data.</param>
     /// <param name="method">The evaluated method.</param>

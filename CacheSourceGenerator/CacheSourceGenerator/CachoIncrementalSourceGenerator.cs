@@ -50,6 +50,11 @@ public class CachoIncrementalSourceGenerator : IIncrementalGenerator
                                                          /// as the method being decorated. But can return any type.
                                                          /// </summary>
                                                         public string? {{Code.KeyGenerator}} {get;set;}
+                                                        
+                                                        /// <summary>
+                                                        /// Set this to true to not generate an evict method
+                                                        /// </summary>
+                                                        public bool {{Code.SuppressEvictMethod}} {get;set;}
                                                      }
                                                  }
                                                  """;
@@ -382,6 +387,9 @@ internal enum CacheMemberAccessSource
     Method
 }
 
+/// <summary>
+/// Represents data related to a method.
+/// </summary>
 public class MethodData
 {
     
@@ -479,6 +487,8 @@ public class EvaluatedCacheEnricher : EvaluatedMethod
     {
     }
 }
+
+
 
 internal class EvaluatedClassCollection
 {
