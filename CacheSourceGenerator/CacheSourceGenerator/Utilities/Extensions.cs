@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using CacheSourceGenerator.Generation;
 using Microsoft.CodeAnalysis;
 
 namespace CacheSourceGenerator.Utilities;
@@ -45,6 +46,8 @@ public static class EnumerableExtensions
 }
 public static class Extensions
 {
+    private static readonly IgnoreKeyRemover IgnoreKeyRemover = new IgnoreKeyRemover();
+
     public static T? GetAttributePropertyValue<T>(this AttributeData attributeData, string name, T? valueIfNotPresent = default) where T : notnull
     {
         if (attributeData == null) throw new ArgumentNullException(nameof(attributeData));
@@ -76,6 +79,12 @@ public static class Extensions
                typeSymbol.OriginalDefinition.Equals(types.GenericTask, SymbolEqualityComparer.Default);
     }
 
+    /// <summary>
+    /// Gets the underlying type of the given type symbol.
+    /// </summary>
+    /// <param name="typeSymbol">The type symbol.</param>
+    /// <param name="types">The lazy-loaded type symbols.</param>
+    /// <returns>The underlying type of the given type symbol.</returns>
     public static ITypeSymbol GetUnderlyingType(this ITypeSymbol typeSymbol, LazyTypes types)
     { 
         if (typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTypeSymbol )
@@ -119,6 +128,17 @@ public static class Extensions
         }
 
         return false;
+    }
+    
+    public static TSyntaxNode RemoveIgnoreAttribute<TSyntaxNode>(this TSyntaxNode node) where TSyntaxNode : SyntaxNode
+    {
+        // remove ignore key
+        return IgnoreKeyRemover.Visit(node) switch
+        {
+            TSyntaxNode m => m,
+            { } o => throw new InvalidOperationException($"Node returned was unexpectedly of type {o.GetType().Name}"),
+            _ => throw new NullReferenceException("Converted was unexpectedly null"),
+        };
     }
     
     public static (bool isEnumerable, ITypeSymbol underlyingType) IsEnumerableOfTypeButNotString(
@@ -219,4 +239,7 @@ public static class Extensions
         return false;
             
     }
+    
+   
+
 }

@@ -88,7 +88,7 @@ public class IgnoreKeyTests : SourceGeneratorTests
         var generatedClass = AssertAndRetrieveClass(result, "TestClass");
 
         generatedClass.ToString().Should().NotContain("IgnoreKey");
-
+        generatedClass.ToString().Should().NotContain("[]");
 
     }
 }

@@ -398,6 +398,9 @@ public class MethodData
     public MethodDeclarationSyntax MethodDeclarationSyntax { get; }
     public AttributeData Attribute { get; }
 
+    public string OnCallingMethodName => $"OnCalling{MethodSymbol.Name}";
+    public string OnCalledMethodName => $"OnCalled{MethodSymbol.Name}";
+
     /// <summary>
     /// Gets a value indicating whether the caller is an asynchronous method.
     /// </summary>
@@ -443,12 +446,31 @@ public class MethodData
 
     public ITypeSymbol UnderlyingType => _lazyUnderlyingType.Value;
 
-    public ReadOnlyCollection<string> GetParameters()
+    /// <summary>
+    /// Retrieves the parameters for the key generator.
+    /// </summary>
+    /// <returns>A read-only collection of parameter names.</returns>
+    public ReadOnlyCollection<string> GetParametersForKeyGenerator()
     {
         var parameterSymbols = MethodSymbol
             .Parameters.Where(x => x.GetAttributes().Length == 0 || !x.GetAttributes().Any(y => y.AttributeClass?.Equals(_types.IgnoreKeyAttribute, SymbolEqualityComparer.Default) == true));
 
         return new ReadOnlyCollection<string>(parameterSymbols.Select(x => x.Name).ToList());
+    }
+
+    public TypeSyntax UnderlyingTypeAsTypeSyntax()
+    {
+        if (UnderlyingType.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is not TypeSyntax typeSyntax)
+        {
+            typeSyntax = SyntaxFactory.ParseTypeName(UnderlyingType.ToDisplayString());
+        }
+        
+        if (UnderlyingType is {IsValueType: true} && ReturnTypeIsNullable)
+        {
+            return SyntaxFactory.NullableType(typeSyntax);
+        }
+
+        return typeSyntax;
     }
 }
 

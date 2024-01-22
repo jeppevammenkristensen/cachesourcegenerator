@@ -1,4 +1,7 @@
-﻿namespace CacheSourceGenerator.Sample;
+﻿using System.Diagnostics;
+using System.Threading.Tasks;
+
+namespace CacheSourceGenerator.Sample;
 
 public partial class Some
 {
@@ -18,8 +21,13 @@ public partial class Another
         return "Bruce Banner";
     }
 
-    public object GetCacheKey(int factor, string customId)
+    partial void OnCallingDoAngry(int factor, string customId)
     {
-        return new {Name = "Angry", VeryAngry = factor, customId};
+        Debug.WriteLine($"{factor}{customId} calling");
+    }
+
+    partial void OnCalledDoAngry(int factor, string customId, string _returned_)
+    {
+        Debug.WriteLine($"{factor}{customId} {_returned_} called");
     }
 }

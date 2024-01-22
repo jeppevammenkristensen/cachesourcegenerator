@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using CacheSourceGenerator.Utilities;
@@ -126,9 +127,31 @@ internal class ClassesCodeBuilder
             var wrappingMethod = CreateWrappingMethod(collection, methodData);
             var createEvictMethod = CreateEvictMethod(collection, methodData);
             newPartialClass = newPartialClass.AddMembers(wrappingMethod, createEvictMethod);
+            newPartialClass = newPartialClass.AddMembers(GeneratePartialMethods(methodData).ToArray());
         }
 
         return newPartialClass;
+    }
+
+    private ImmutableArray<MemberDeclarationSyntax> GeneratePartialMethods(MethodData methodData)
+    {
+        var onCallingMethod = SyntaxFactory.MethodDeclaration(
+            SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),
+            SyntaxFactory.Identifier(methodData.OnCallingMethodName));
+        onCallingMethod = onCallingMethod
+            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword))
+            .WithParameterList(methodData.MethodDeclarationSyntax.ParameterList)
+            .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))
+            .RemoveIgnoreAttribute();
+        var result = ImmutableArray.Create<MemberDeclarationSyntax>(onCallingMethod);
+
+
+        var returnedParameter = SyntaxFactory.Parameter(SyntaxFactory.Identifier("_returned_"))
+            .WithType(methodData.UnderlyingTypeAsTypeSyntax());
+        result = result.Add(onCallingMethod
+            .WithIdentifier(SyntaxFactory.Identifier(methodData.OnCalledMethodName))
+            .AddParameterListParameters(returnedParameter));
+        return result;
     }
 
     private MethodDeclarationSyntax CreateEvictMethod(EvaluatedClassCollection collection, MethodData methodData)
@@ -158,15 +181,9 @@ internal class ClassesCodeBuilder
         // Reuse the source method but give it the new name
         var newMethod = methodData.MethodDeclarationSyntax.WithIdentifier(newIdentifier);
         // Clear attributes
-        newMethod = newMethod.WithAttributeLists(SyntaxFactory.List<AttributeListSyntax>());
-        
-        // remove ignore key
-        newMethod = _ignoreKeyRemover.Visit(newMethod) switch
-        {
-            MethodDeclarationSyntax m => m,
-            { } o => throw new InvalidOperationException($"Method was unexpectedly of type {o.GetType().Name}"),
-            _ => throw new NullReferenceException("Converted was unexpectedly null"),
-        };
+        newMethod = newMethod
+            .WithAttributeLists(SyntaxFactory.List<AttributeListSyntax>())
+            .RemoveIgnoreAttribute();
 
         HashSet<SyntaxKind> accessModifiers = new HashSet<SyntaxKind>(new[]
         {
@@ -188,6 +205,8 @@ internal class ClassesCodeBuilder
             SyntaxFactory.TokenList(newModifiers.Concat(syntaxTokens)));
         return newMethod;
     }
+
+    
 
     private string GenerateEvictMethodStatement(EvaluatedClassCollection collection, MethodData methodData)
     {
@@ -226,7 +245,11 @@ internal class ClassesCodeBuilder
                             var _result_ = await _cache_.GetOrCreateAsync(_key_, async _entry_ =>
                             {
                                 {{GenerateCacheEntryProcessing(methodData)}}
-                                return await {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
+                                
+                                {{GenerateOnCallingInvocation(methodData)}};
+                                var _callResult_ = await {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
+                                {{GenerateOnCalledInvocation(methodData)}};
+                                return _callResult_;
                             });
                             return _result_{{conditionalBang}};
 
@@ -242,7 +265,10 @@ internal class ClassesCodeBuilder
                         var _result_ = _cache_.GetOrCreate(_key_, _entry_ =>
                         {
                             {{GenerateCacheEntryProcessing(methodData)}}
-                            return {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
+                            {{GenerateOnCallingInvocation(methodData)}}
+                            var _callResult_ = {{methodSymbol.Name}}({{string.Join(",", methodSymbol.Parameters.Select(x => x.Name))}});
+                            {{GenerateOnCalledInvocation(methodData)}};
+                            return _callResult_;
                         });
                         return _result_{{conditionalBang}};
 
@@ -250,12 +276,24 @@ internal class ClassesCodeBuilder
                  """;
     }
 
+    private string GenerateOnCallingInvocation(MethodData methodData)
+    {
+        return
+            $"{methodData.OnCallingMethodName}({string.Join(",", methodData.MethodSymbol.Parameters.Select(x => x.Name))});";
+    }
+    
+    private string GenerateOnCalledInvocation(MethodData methodData)
+    {
+        return
+            $"{methodData.OnCalledMethodName}({string.Join(",", methodData.MethodSymbol.Parameters.Select(x => x.Name).Concat(new[] {"_callResult_"}))});";
+    }
+
     private string KeyInitialiser(EvaluatedClassCollection collection, MethodData methodData)
     {
         if (methodData.EvaluatedKeyGenerator == null)
         {
             return
-                $$"""new { _MethodName = "{{methodData.MethodSymbol.Name}}", _ClassName = "{{collection.NamedTypeSymbol.Name}}", {{string.Join(",", methodData.GetParameters()) }} }""";
+                $$"""new { _MethodName = "{{methodData.MethodSymbol.Name}}", _ClassName = "{{collection.NamedTypeSymbol.Name}}", {{string.Join(",", methodData.GetParametersForKeyGenerator()) }} }""";
         }
 
         return GenerateEvaluatedMethodCall(methodData, methodData.EvaluatedKeyGenerator,
@@ -337,16 +375,5 @@ internal class ClassesCodeBuilder
 
     }
 
-    public class IgnoreKeyRemover : CSharpSyntaxRewriter
-    {
-        public override SyntaxNode? VisitAttributeList(AttributeListSyntax node)
-        {
-            var attributesWithoutIgnoreKey = node.Attributes
-                .Where(attribute => attribute.Name.ToString() != "IgnoreKey")
-                .ToSeparatedSyntaxList();
-            
-            return base.VisitAttributeList(node.WithAttributes(attributesWithoutIgnoreKey));
-        }
-    }
 }
 
