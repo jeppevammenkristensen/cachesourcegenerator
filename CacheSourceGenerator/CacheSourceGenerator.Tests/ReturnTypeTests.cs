@@ -37,6 +37,41 @@ public class ReturnTypeTests : SourceGeneratorTests
         var method = this.AssertAndRetrieveGeneratedMethod(result,"TestClass","CacheName");
         method.Should().HaveBodyContaining("_result_;");
     }
+    
+    [Fact]
+    public void ReturnTypeList_Ok()
+    {
+        var code = """
+                   using Microsoft.Extensions.Caching.Memory;
+                   using System.Threading.Tasks;
+                   using System.Collections.Generic;
+
+                   namespace TestNamespace;
+
+                   public record Test(string Name){}
+                   
+                   public partial class TestClass
+                   {
+                        private readonly IMemoryCache _cache;
+                   
+                        public TestClass(IMemoryCache cache)
+                        {
+                            _cache = cache;
+                        }
+                        
+                        [CacheSourceGenerator.GenerateMemoryCache(MethodName = "CacheName")]
+                        public List<Test> CalculateAge()
+                        {
+                            return string.Empty;
+                        }
+                   }
+                   """;
+
+        var result = Generator.GenerateResult(code);
+        var method = this.AssertAndRetrieveGeneratedMethod(result,"TestClass","CacheName");
+        method.Should().HaveBodyContaining("_result_;");
+    }
+    
     [Fact]
     public void ReturnTypeIsAsyncStringNotNullable_DoesNotApplyBang()
     {

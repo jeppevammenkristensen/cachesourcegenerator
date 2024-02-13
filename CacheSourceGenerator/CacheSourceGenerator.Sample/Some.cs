@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace CacheSourceGenerator.Sample;
@@ -29,5 +30,20 @@ public partial class Another
     partial void OnCalledDoAngry(int factor, string customId, string _returned_)
     {
         Debug.WriteLine($"{factor}{customId} {_returned_} called");
+    }
+}
+
+public partial class ListTypeReturned
+{
+    [GenerateMemoryCache(MethodName = "CachedGetResult")]
+    private List<string> GetResult(string parameter)
+    {
+        return [parameter];
+    }
+
+    [GenerateMemoryCache(MethodName = "CacheAsyncResult")]
+    private async Task<List<string>> GetResultAsync(string parameter)
+    {
+        return [parameter];
     }
 }

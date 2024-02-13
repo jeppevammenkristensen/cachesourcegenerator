@@ -10,11 +10,11 @@
         <PackageId>CacheSourceGenerator</PackageId>
         <Authors>Jeppe Roi Kristensen</Authors>
         <Description>A tool to wrap a method call with caching</Description>        
-        <VersionPrefix>0.4.0</VersionPrefix>        
+        <VersionPrefix>0.4.1</VersionPrefix>        
         <PackageTags>C#; Source Generator; Caching; Cache; Csharp</PackageTags>
         <PackageProjectUrl>https://github.com/jeppevammenkristensen/cachesourcegenerator</PackageProjectUrl>        
         <RepositoryUrl>https://github.com/jeppevammenkristensen/cachesourcegenerator</RepositoryUrl>
-        <PackageReleaseNotes>Added support for a key generator. Renamed CachoAttribute to GenerateMemoryCacheAttribute. Minor bugfixes</PackageReleaseNotes>
+        <PackageReleaseNotes>Fixed issue with stack overflow exception when return type is a generic item that is not Task or Nullable</PackageReleaseNotes>
         <PackageReadmeFile>Readme.md</PackageReadmeFile>
         <PackageIcon>Icon.png</PackageIcon>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>

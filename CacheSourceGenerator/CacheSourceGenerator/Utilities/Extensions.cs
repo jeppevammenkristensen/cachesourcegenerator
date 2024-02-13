@@ -99,7 +99,7 @@ public static class Extensions
                 return GetUnderlyingType(namedTypeSymbol.TypeArguments[0], types);
             }
 
-            return GetUnderlyingType(typeSymbol, types);
+            return typeSymbol;
         }
 
         return typeSymbol;
